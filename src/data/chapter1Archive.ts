@@ -73,6 +73,50 @@ const CLUE_BACKED_ARCHIVE_DOCUMENTS: ArchiveDocumentDefinition[] = CHAPTER1_CLUE
 
 export const V4_ORIGINAL_ARCHIVE_DOCUMENTS: ArchiveDocumentDefinition[] = [
   {
+    id: "DOC-SC01-SHIFT-NOTICE",
+    title: "THÔNG BÁO NHÂN VIÊN TRỰC ĐÊM",
+    sourceLabel: "SC-01 · Bảng thông báo",
+    category: "dossier",
+    relatedSceneId: "SC-01",
+    relatedClueIds: [],
+    unlockCondition: { inScene: "SC-01" },
+    content: `TRẠM HẢI ĐĂNG MŨI SƯƠNG – TRẠM 09
+
+THÔNG BÁO NHÂN VIÊN TRỰC ĐÊM
+
+1. Ca trực đêm bắt đầu lúc 23:40 và kết thúc lúc 06:00.
+2. Nhân viên phải hoàn tất thủ tục giao ca trước khi rời trạm.
+3. Không tự ý mở cổng ngoài khi sương mù tiến sát hàng rào.
+4. Mọi trường hợp mất liên lạc phải được ghi vào sổ trực.
+5. Nhân viên không được tự ý thay đổi chế độ vận hành thấu kính.
+
+Lưu ý: Không có ngoại lệ đối với nhân viên mới.`
+  },
+  {
+    id: "DOC-SC01-TRANSPORT-HANDOVER",
+    title: "PHIẾU BÀN GIAO VẬN CHUYỂN",
+    sourceLabel: "SC-01 · Ghế lái xe bỏ trống",
+    category: "dossier",
+    relatedSceneId: "SC-01",
+    relatedClueIds: [],
+    unlockCondition: { inScene: "SC-01" },
+    content: `PHIẾU BÀN GIAO VẬN CHUYỂN
+
+Tuyến: Trụ sở – Trạm 09.
+
+Người vận chuyển: Không ghi nhận.
+
+Hành khách: Nhân viên điều tra mới.
+
+Thời gian đến: 23:40.
+
+Thời gian rời trạm: 23:40.
+
+Ghi chú viết tay:
+
+"Không chờ hành khách hoàn tất nhiệm vụ. Không nhận yêu cầu quay lại sau khi đã qua cổng."`
+  },
+  {
     id: "DOC-DAT-DIARY",
     title: "Nhật ký Phạm Quốc Đạt",
     sourceLabel: "SC-03 – Khu nghỉ nhân viên · Tài liệu cá nhân",

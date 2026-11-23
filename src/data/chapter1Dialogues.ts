@@ -13,7 +13,7 @@ export const CHAPTER1_DIALOGUES: DialogueDefinition[] = [
         speakerId: "CHAR-SYS",
         expression: "neutral",
         channel: "SYSTEM",
-        text: "Bản ghi ca trực đêm tháng 11/1998 — Trạm Hải Đăng Mũi Sương (Trạm 09). Gió biển lặng bất thường; ngoài hàng rào có một màn sương trắng đang tụ lại phía xa, chưa rõ đã áp sát chân cổng hay chưa.",
+        text: "GHI NHẬN CA TRỰC · 23:40 — Trạm Hải Đăng Mũi Sương (Trạm 09). Gió biển lặng bất thường; ngoài hàng rào có một màn sương trắng đang tụ lại ở phía xa, chưa rõ đã áp sát chân cổng hay chưa.",
         choices: [
           {
             id: "sc01-inspect-gate",
