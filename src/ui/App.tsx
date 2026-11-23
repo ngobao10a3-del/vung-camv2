@@ -575,8 +575,11 @@ export default function App({
     </button>
   );
 
+  const moveNext = nextScene
+    ? choice(`Tiến tới ${nextScene.name} →`, () => go(nextScene.id), { nav: true })
+    : null;
+
   const renderSceneChoices = () => {
-    const moveNext = nextScene && choice(`Tiến tới ${nextScene.name} →`, () => go(nextScene.id), { nav: true });
     switch (scene.id) {
       case "SC-01":
         return <>
@@ -593,7 +596,6 @@ export default function App({
           {choice("Mở cửa ngoài", () => perform("OPEN_EXTERIOR_DOOR", "hs_exterior_door"), {
             disabled: Boolean(state.flags.fog_breached)
           })}
-          {moveNext}
         </>;
       case "SC-02":
         return <>
@@ -631,7 +633,6 @@ export default function App({
             refreshUI();
           }, { done: engine.dialogue.isDialogueCompleted("DLG-SC02-PHONE") })}
           {choice("Nghe điện thoại", () => perform("ANSWER_PHONE", "internal_phone"))}
-          {moveNext}
         </>;
       case "SC-03":
         return <>
@@ -658,14 +659,12 @@ export default function App({
           )}
           {choice("Áp tai nghe tủ 04", () => { setFlag("locker_knocking", true); say("TỦ ĐỒ SỐ 04", "Bên trong tủ vang lên ba tiếng gõ chậm. Hơi lạnh rỉ qua khe cửa."); })}
           {choice("Mở tủ số 04", handleLocker04Interaction)}
-          {moveNext}
         </>;
       case "SC-04":
         return <>
           {choice("Đọc sơ đồ tải điện", () => discoverClue("C-04", "LOW triệt nhiễu cho radar; NORMAL vận hành tiêu chuẩn; OVERLOAD đẩy công suất thấu kính quá ngưỡng."), { done: discoveredClues.includes("C-04") })}
           {choice("Đặt nguồn OVERLOAD", () => perform("USE_ITEM", "power_overload_switch"))}
           {choice("Giải mã cân bằng tải", () => setActiveModal("puzzles"), { done: solved("PZ-01"), disabled: !has("I-04") || solved("PZ-01") })}
-          {moveNext}
         </>;
       case "SC-05":
         return <>
@@ -673,7 +672,6 @@ export default function App({
           {choice("Đọc bảng bộ lọc", () => discoverClue("C-07", "Ánh sáng đỏ trên 620nm vô hiệu hóa chức năng ghi nhận."), { done: discoveredClues.includes("C-07") })}
           {choice("Vận hành thiết bị quan sát", inspectRadarGear)}
           {choice("Mở khóa giải mã (PZ-02 / PZ-03)", () => setActiveModal("puzzles"))}
-          {moveNext}
         </>;
       case "SC-06": {
         const canEndingB = canReachEndingB(state);
@@ -937,7 +935,10 @@ export default function App({
 
             <p className={`dialogue-text ${isViolationMsg ? "violation" : ""}`}>{dialogue}</p>
 
-            <div className="choice-bar">{renderSceneChoices()}</div>
+            <div className="choice-actions-row">
+              <div className="choice-bar">{renderSceneChoices()}</div>
+              {moveNext && <div className="choice-nav-dock">{moveNext}</div>}
+            </div>
           </div>
         )}
 
