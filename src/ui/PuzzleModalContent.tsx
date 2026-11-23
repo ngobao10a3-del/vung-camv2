@@ -17,6 +17,8 @@ export type PuzzleModalContentProps = {
   itemsMeta: Readonly<Record<string, { name: string; note: string }>>;
   onSubmitPuzzle: (puzzleId: string, submission: string) => void;
   onScanRadar: () => void;
+  onInstallPowerFuse?: () => void;
+  onToggleAuxBranch?: () => void;
   feedback?: PuzzleModalFeedback | null;
 };
 
@@ -118,6 +120,8 @@ export function PuzzleModalContent({
   itemsMeta,
   onSubmitPuzzle,
   onScanRadar,
+  onInstallPowerFuse,
+  onToggleAuxBranch,
   feedback
 }: PuzzleModalContentProps) {
   const [pz02Digits, setPz02Digits] = useState<[number, number, number, number]>([0, 0, 0, 0]);
@@ -203,6 +207,11 @@ export function PuzzleModalContent({
         const isSolved = state.solvedPuzzleIds.includes(pz.id);
 
         if (pz.id === "PZ-01") {
+          const hasI04 = state.inventoryItemIds.includes("I-04");
+          const fuseInstalled = state.powerPanelState.fuseInstalled;
+          const auxBranchOff = state.powerPanelState.auxBranchOff;
+          const pz01Ready = hasI04 && fuseInstalled && auxBranchOff;
+
           return (
             <section className="puzzle-card pz-industrial-panel" key={pz.id} data-testid="puzzle-card-PZ-01">
               <div className="rule-card-top">
@@ -216,8 +225,52 @@ export function PuzzleModalContent({
               </div>
 
               <p className="pz-objective">
-                <strong>Mục tiêu:</strong> Chọn chế độ tải điện phù hợp trên tủ nguồn Phòng máy để triệt nhiễu cho thiết bị quan sát.
+                <strong>Mục tiêu:</strong> Lắp Cầu chì 30A (I-04), ngắt nhánh điện phụ (AUX OFF) và chọn chế độ tải điện phù hợp trên tủ nguồn Phòng máy.
               </p>
+
+              <div className="pz-interlock-status" data-testid="PZ-01-panel-prep">
+                <div>
+                  <span>1. Cầu chì bảo vệ 30A (I-04):</span>
+                  <strong className={fuseInstalled ? "status-ok-text" : "status-warn-text"}>
+                    {fuseInstalled
+                      ? "ĐÃ LẮP CẦU CHÌ 30A"
+                      : hasI04
+                        ? "CHƯA LẮP VÀO BẢNG MẠCH"
+                        : "THIẾU CẦU CHÌ 30A (I-04)"}
+                  </strong>
+                  {!isSolved && (
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      disabled={!hasI04 || fuseInstalled}
+                      onClick={() => onInstallPowerFuse?.()}
+                    >
+                      {fuseInstalled ? "✓ Đã lắp cầu chì 30A" : "Lắp Cầu chì 30A (I-04)"}
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <span>2. Công tắc nhánh điện phụ (AUX):</span>
+                  <strong className={auxBranchOff ? "status-ok-text" : "status-warn-text"}>
+                    {auxBranchOff ? "ĐÃ NGẮT (AUX OFF)" : "ĐANG BẬT (AUX ON)"}
+                  </strong>
+                  {!isSolved && (
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={() => onToggleAuxBranch?.()}
+                    >
+                      {auxBranchOff ? "Bật nhánh phụ (AUX ON)" : "Ngắt nhánh phụ (AUX OFF)"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!isSolved && !pz01Ready && (
+                <div className="pz-prereq-banner" role="status">
+                  Để chuyển mạch sang chế độ <b>LOW</b>: Cần có <b>Cầu chì 30A (I-04)</b>, lắp cầu chì vào khe bảo vệ và gạt nhánh phụ sang <b>AUX OFF</b>.
+                </div>
+              )}
 
               <div className="pz-selector-grid" role="group" aria-label="Công tắc chọn chế độ tải điện PZ-01">
                 {PZ01_SELECTOR_OPTIONS.map(opt => {

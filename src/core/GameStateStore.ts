@@ -2,7 +2,7 @@ import type { ChapterDefinition, EntityState, FlagValue } from "../types/common"
 import type { CharacterState } from "../types/dialogue";
 import type { InvestigationStatus } from "../types/investigation";
 import type { RuleLifecycleState } from "../types/rules";
-import type { GameState, SaveData } from "../types/save";
+import type { GameState, PowerPanelState, SaveData } from "../types/save";
 
 export type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T
@@ -72,6 +72,10 @@ export function createInitialState(chapterId = "CH-01", sceneId = "SC-01"): Game
       red_filter_installed: false,
       captain_missing_confirmed: false
     },
+    powerPanelState: {
+      fuseInstalled: false,
+      auxBranchOff: false
+    },
     inventoryItemIds: [],
     collectedItemIds: [],
     discoveredClueIds: [],
@@ -120,6 +124,10 @@ export class GameStateStore {
       currentSceneId: chapter.initialSceneId,
       observationMode: false,
       flags: { ...chapter.initialFlags },
+      powerPanelState: {
+        fuseInstalled: false,
+        auxBranchOff: false
+      },
       inventoryItemIds: [],
       collectedItemIds: [],
       discoveredClueIds: [],
@@ -180,6 +188,30 @@ export class GameStateStore {
     const current = this.state.flags[key];
     const base = typeof current === "number" ? current : 0;
     return this.setFlag(key, base + amount);
+  }
+
+  installPowerFuse(): boolean {
+    if (this.state.powerPanelState.fuseInstalled) return false;
+    this.state = {
+      ...this.state,
+      powerPanelState: {
+        ...this.state.powerPanelState,
+        fuseInstalled: true
+      }
+    };
+    return true;
+  }
+
+  setAuxBranchOff(value: boolean): boolean {
+    if (this.state.powerPanelState.auxBranchOff === value) return false;
+    this.state = {
+      ...this.state,
+      powerPanelState: {
+        ...this.state.powerPanelState,
+        auxBranchOff: value
+      }
+    };
+    return true;
   }
 
   /** Chặn tuyệt đối việc nhặt lại vật phẩm đã từng thu thập (kể cả sau khi đã tiêu thụ) */
@@ -419,8 +451,15 @@ export class GameStateStore {
         ? Math.max(0, Math.min(2, Math.floor(rawCount)))
         : 0;
 
+    const rawPanel = save.state.powerPanelState as Partial<PowerPanelState> | undefined;
+    const powerPanelState: PowerPanelState = {
+      fuseInstalled: Boolean(rawPanel?.fuseInstalled),
+      auxBranchOff: Boolean(rawPanel?.auxBranchOff)
+    };
+
     const nextState: GameState = {
       ...save.state,
+      powerPanelState,
       puzzleAttempts: save.state.puzzleAttempts ?? {},
       completedDialogueIds: Array.isArray(save.state.completedDialogueIds) ? save.state.completedDialogueIds : [],
       characterStates: save.state.characterStates ? { ...save.state.characterStates } : {},

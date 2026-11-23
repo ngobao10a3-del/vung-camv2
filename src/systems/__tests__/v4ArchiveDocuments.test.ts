@@ -83,8 +83,9 @@ describe("V4 Batch 1 — 8 Original Source Documents Integration Suite", () => {
     expect(archive.isUnlocked("DOC-DAT-HR")).toBe(false);
     expect(archive.isUnlocked("DOC-HUNG-HR")).toBe(false);
 
-    // Thu thập I-03 nhưng chưa phát băng (C-05) không mở khóa Băng Cassette gốc
+    // Thu thập I-03 và phát Mặt A (C-05) chưa mở khóa Băng Cassette gốc (Mặt B)
     store.addItem("I-03");
+    store.discoverClue("C-05");
     expect(archive.isUnlocked("DOC-ORIGINAL-CASSETTE")).toBe(false);
   });
 
@@ -112,9 +113,10 @@ describe("V4 Batch 1 — 8 Original Source Documents Integration Suite", () => {
     store.setFlag("locker_knocking", true);
     expect(archive.isUnlocked("DOC-DAT-DIARY")).toBe(true);
 
-    // SC-03 / SC-02: Băng Cassette gốc (I-03 + C-05)
+    // SC-03 / SC-02: Băng Cassette gốc (I-03 + phát Mặt B)
     store.addItem("I-03");
     store.discoverClue("C-05");
+    store.markOnce("cassette_side_b_heard");
     expect(archive.isUnlocked("DOC-ORIGINAL-CASSETTE")).toBe(true);
 
     // SC-04: Tài liệu Lens Array LA-09-02 (C-04 + PZ-01 đã giải)

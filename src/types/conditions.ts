@@ -17,4 +17,6 @@ export type Condition =
   | { ruleLifecycleIs: { ruleId: string; state: RuleLifecycleState } }
   | { ruleStatusIs: { ruleId: string; status: InvestigationStatus } }
   | { entityStateIs: { entityId: string; state: EntityState } }
-  | { triggeredOnce: string };
+  | { triggeredOnce: string }
+  | { powerFuseInstalled: boolean }
+  | { auxBranchOff: boolean };

@@ -35,6 +35,12 @@ export class ConditionEvaluator {
     if ("triggeredOnce" in condition) {
       return state.triggeredOnceIds.includes(condition.triggeredOnce);
     }
+    if ("powerFuseInstalled" in condition) {
+      return state.powerPanelState.fuseInstalled === condition.powerFuseInstalled;
+    }
+    if ("auxBranchOff" in condition) {
+      return state.powerPanelState.auxBranchOff === condition.auxBranchOff;
+    }
 
     return false;
   }

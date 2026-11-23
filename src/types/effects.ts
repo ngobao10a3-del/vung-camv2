@@ -20,7 +20,9 @@ export type GameEffect =
   | { type: "SHOW_LOG"; message: string }
   | { type: "RECORD_IDENTITY_OVERWRITE"; onceKey: string; reason: string }
   | { type: "SET_DEATH_REASON"; reason: string }
-  | { type: "TRIGGER_ENDING"; endingId: string };
+  | { type: "TRIGGER_ENDING"; endingId: string }
+  | { type: "INSTALL_POWER_FUSE" }
+  | { type: "SET_AUX_BRANCH_OFF"; value: boolean };
 
 export interface EffectBlock {
   onceId?: string;

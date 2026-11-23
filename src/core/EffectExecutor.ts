@@ -1,9 +1,15 @@
 import type { EffectBlock, GameEffect } from "../types/effects";
 import type { GameEvent } from "../types/events";
-import { GameStateStore } from "./GameStateStore";
+import type { GameState } from "../types/save";
+import { GameStateStore, type DeepReadonly } from "./GameStateStore";
+
+export type EndingValidator = (endingId: string, state: DeepReadonly<GameState>) => boolean;
 
 export class EffectExecutor {
-  constructor(private readonly store: GameStateStore) {}
+  constructor(
+    private readonly store: GameStateStore,
+    private readonly canTriggerEnding?: EndingValidator
+  ) {}
 
   execute(block: EffectBlock | undefined): GameEvent[] {
     if (!block || block.effects.length === 0) return [];
@@ -179,8 +185,25 @@ export class EffectExecutor {
       }
 
       case "TRIGGER_ENDING": {
+        if (this.canTriggerEnding && !this.canTriggerEnding(effect.endingId, this.store.snapshot())) {
+          return [];
+        }
         const set = this.store.setEnding(effect.endingId);
         return set ? [{ type: "ENDING_REACHED", endingId: effect.endingId, sceneId: executionSceneId }] : [];
+      }
+
+      case "INSTALL_POWER_FUSE": {
+        const changed = this.store.installPowerFuse();
+        return changed
+          ? [{ type: "STATE_CHANGED", domain: "puzzles", targetId: "power_fuse_slot", sceneId: executionSceneId }]
+          : [];
+      }
+
+      case "SET_AUX_BRANCH_OFF": {
+        const changed = this.store.setAuxBranchOff(effect.value);
+        return changed
+          ? [{ type: "STATE_CHANGED", domain: "puzzles", targetId: "aux_branch", sceneId: executionSceneId }]
+          : [];
       }
     }
   }

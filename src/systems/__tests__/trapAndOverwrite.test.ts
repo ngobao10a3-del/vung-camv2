@@ -16,9 +16,25 @@ import App from "../../ui/App";
 import { DialoguePanel } from "../../ui/DialoguePanel";
 
 describe("Phase A — Trap Mechanics, Neutral UI & Two-Stage Overwrite", () => {
-  it("TRAP-01: R-01 mở cửa ngoài gây END-03 ngay lập tức, ghi rõ deathReason và chặn hành động sau ending", () => {
+  it("TRAP-01: R-01 mở cửa ngoài gây END-03 ngay lập tức khi sương áp sát, ghi rõ deathReason và chặn hành động sau ending", () => {
     const engine = createChapter1Engine();
 
+    // Khi sương chưa áp sát, mở cửa ngoài không gây tử vong
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.OPEN_EXTERIOR_DOOR,
+      targetId: "hs_exterior_door",
+      sceneId: "SC-01"
+    });
+    expect(engine.store.snapshot().activeEndingId).toBeNull();
+
+    // Khi kiểm tra cổng / sương đã áp sát, mở cửa ngoài kích hoạt R-01 -> END-03
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.INSPECT_OBJECT,
+      targetId: "exterior_gate",
+      sceneId: "SC-01"
+    });
     engine.dispatcher.dispatch({
       type: "PLAYER_ACTION_PERFORMED",
       actionTag: ACTION_TAGS.OPEN_EXTERIOR_DOOR,
@@ -177,9 +193,17 @@ describe("Phase A — Trap Mechanics, Neutral UI & Two-Stage Overwrite", () => {
     expect(overloadEngine.store.snapshot().activeEndingId).toBeNull();
   });
 
-  it("TRAP-08: R-09 nghe điện thoại nội bộ tính 1 lần ghi đè; kết hợp R-05 OVERLOAD gây END-03", () => {
+  it("TRAP-08: R-09 nghe điện thoại nội bộ sau khi biến đổi tính 1 lần ghi đè; kết hợp R-05 OVERLOAD gây END-03", () => {
     const engine = createChapter1Engine();
     engine.store.changeScene("SC-02");
+    engine.store.setFlag("captain_missing_confirmed", true);
+    engine.dispatcher.dispatch({
+      type: "STATE_CHANGED",
+      domain: "flags",
+      targetId: "captain_missing_confirmed",
+      sceneId: "SC-02"
+    });
+    expect(engine.rules.getRuleLifecycle("R-09")).toBe("transformed");
     engine.dispatcher.dispatch({
       type: "PLAYER_ACTION_PERFORMED",
       actionTag: ACTION_TAGS.ANSWER_PHONE,
@@ -214,6 +238,13 @@ describe("Phase A — Trap Mechanics, Neutral UI & Two-Stage Overwrite", () => {
     // Chuẩn bị điều kiện kết thúc S nhưng còn dính identity_exposed
     ["R-03", "R-04", "R-05"].forEach(id => engine.store.discoverRule(id));
     ["C-01", "C-02", "C-04", "C-05", "C-07", "C-08"].forEach(id => engine.store.discoverClue(id));
+    engine.store.addItem("I-03");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "cassette_side_b",
+      sceneId: "SC-02"
+    });
     expect(engine.investigation.linkClueToRule("R-03", "C-02").ok).toBe(true);
     expect(engine.investigation.linkClueToRule("R-03", "C-07").ok).toBe(true);
     expect(engine.investigation.linkClueToRule("R-04", "C-01").ok).toBe(true);

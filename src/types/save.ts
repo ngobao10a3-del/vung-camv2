@@ -3,11 +3,17 @@ import type { CharacterState } from "./dialogue";
 import type { InvestigationStatus } from "./investigation";
 import type { RuleLifecycleState } from "./rules";
 
+export interface PowerPanelState {
+  fuseInstalled: boolean;
+  auxBranchOff: boolean;
+}
+
 export interface GameState {
   chapterId: string;
   currentSceneId: string;
   observationMode: boolean;
   flags: Record<string, FlagValue>;
+  powerPanelState: PowerPanelState;
   inventoryItemIds: string[];
   collectedItemIds: string[];
   discoveredClueIds: string[];

@@ -17,9 +17,14 @@ import { PuzzleModalContent } from "../../ui/PuzzleModalContent";
 const CLUES_BY_ID = new Map(CHAPTER1_CLUES.map(clue => [clue.id, clue]));
 
 describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
-  it("PZ01-ENG-01: NORMAL giữ nguồn tiêu chuẩn, OVERLOAD kích hoạt R-05 1 lần, LOW giải PZ-01 và mở R-07", () => {
+  it("PZ01-ENG-01: Chặn LOW khi thiếu I-04/cầu chì/AUX OFF; NORMAL giữ tiêu chuẩn; OVERLOAD kích hoạt R-05 1 lần; đủ điều kiện thì LOW giải PZ-01", () => {
     const engine = createChapter1Engine();
     engine.store.changeScene("SC-04");
+
+    // Chưa có I-04, chưa lắp cầu chì, chưa ngắt AUX -> LOW bị từ chối ở cấp engine
+    expect(engine.puzzles.submitSolution("PZ-01", "LOW").status).toBe("missing_items");
+    expect(engine.store.snapshot().flags.power_mode).toBe("normal");
+    expect(engine.puzzles.isSolved("PZ-01")).toBe(false);
 
     const normalRes = engine.puzzles.submitSolution("PZ-01", "NORMAL");
     expect(normalRes.status).toBe("failed");
@@ -40,7 +45,21 @@ describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
     expect(engine.store.snapshot().identityOverwriteCount).toBe(1);
     expect(engine.store.snapshot().activeEndingId).toBeNull();
 
-    // Vẫn giải được PZ-01 bằng LOW
+    // Chuẩn bị đủ I-04 + lắp cầu chì + ngắt nhánh phụ -> giải được PZ-01 bằng LOW
+    engine.store.addItem("I-04");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "power_fuse_slot",
+      sceneId: "SC-04"
+    });
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "aux_branch_off",
+      sceneId: "SC-04"
+    });
+
     const lowRes = engine.puzzles.submitSolution("PZ-01", "LOW");
     expect(lowRes.status).toBe("solved");
     expect(engine.store.snapshot().flags.power_mode).toBe("low");
@@ -83,7 +102,22 @@ describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
     expect(engine.puzzles.submitSolution("PZ-02", "2714").status).toBe("missing_items");
 
     // Chuyển LOW nhưng chưa quét radar & chưa có C-02 -> vẫn bị chặn
-    engine.puzzles.submitSolution("PZ-01", "LOW");
+    engine.store.addItem("I-04");
+    engine.store.changeScene("SC-04");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "power_fuse_slot",
+      sceneId: "SC-04"
+    });
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "aux_branch_off",
+      sceneId: "SC-04"
+    });
+    expect(engine.puzzles.submitSolution("PZ-01", "LOW").status).toBe("solved");
+    engine.store.changeScene("SC-05");
     expect(engine.puzzles.submitSolution("PZ-02", "2714").status).toBe("missing_items");
 
     // Quét radar ở LOW -> mở radar_low_scanned, nhưng thiếu C-02 -> vẫn bị chặn
@@ -185,7 +219,22 @@ describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
     expect(lockedHtml).not.toContain("2714");
 
     // Sau khi đạt LOW + quét radar + có C-02/C-04 -> hiện tóm tắt đã tìm thấy, mở khóa bánh răng, vẫn không lộ 2714
-    engine.puzzles.submitSolution("PZ-01", "LOW");
+    engine.store.addItem("I-04");
+    engine.store.changeScene("SC-04");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "power_fuse_slot",
+      sceneId: "SC-04"
+    });
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "aux_branch_off",
+      sceneId: "SC-04"
+    });
+    expect(engine.puzzles.submitSolution("PZ-01", "LOW").status).toBe("solved");
+    engine.store.changeScene("SC-05");
     engine.dispatcher.dispatch({
       type: "PLAYER_ACTION_PERFORMED",
       actionTag: ACTION_TAGS.USE_OBSERVATION_GEAR,
@@ -267,12 +316,32 @@ describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
     engine.store.discoverClue("C-04");
     engine.store.discoverClue("C-05");
     engine.store.discoverClue("C-07");
+    engine.store.addItem("I-03");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "cassette_side_b",
+      sceneId: "SC-02"
+    });
+    engine.store.addItem("I-04");
     engine.store.addItem("I-06");
     engine.store.setFlag("radio_state", "paused");
 
     engine.store.changeScene("SC-04");
     engine.puzzles.submitSolution("PZ-01", "OVERLOAD");
     expect(engine.store.snapshot().identityOverwriteCount).toBe(1);
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "power_fuse_slot",
+      sceneId: "SC-04"
+    });
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.USE_ITEM,
+      targetId: "aux_branch_off",
+      sceneId: "SC-04"
+    });
     expect(engine.puzzles.submitSolution("PZ-01", "LOW").status).toBe("solved");
 
     engine.store.changeScene("SC-05");
@@ -296,6 +365,8 @@ describe("Phase C — PZ-01/02/03 Engine, UI & Regression Suite", () => {
     const restoredSnap = restored.store.snapshot();
     expect(restoredSnap.identityOverwriteCount).toBe(1);
     expect(restoredSnap.triggeredOnceIds).toContain("radar_low_scanned");
+    expect(restoredSnap.triggeredOnceIds).toContain("cassette_side_b_heard");
+    expect(restoredSnap.powerPanelState).toEqual({ fuseInstalled: true, auxBranchOff: true });
     expect(restoredSnap.solvedPuzzleIds).toEqual(["PZ-01", "PZ-02", "PZ-03"]);
 
     // Sang SC-06, lắp bộ lọc đỏ và đảo pha xóa dữ liệu tồn dư -> mở khóa lại END-02 và END-01

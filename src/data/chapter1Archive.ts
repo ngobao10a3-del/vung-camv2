@@ -288,7 +288,7 @@ Loại: Bản ghi âm tự động.
     unlockCondition: {
       all: [
         { itemCollected: "I-03" },
-        { hasClue: "C-05" }
+        { triggeredOnce: "cassette_side_b_heard" }
       ]
     },
     content: `Vị trí: SC-03 – Ngăn tủ không đánh số

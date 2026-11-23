@@ -138,7 +138,17 @@ export const CHAPTER1_RULES: RuleDefinition[] = [
     type: "true",
     scope: "Toàn trạm",
     baseText: "Không mở cửa ra ngoài khi sương mù đang áp sát chân tường trạm.",
-    violationTriggers: [{ actionTag: ACTION_TAGS.OPEN_EXTERIOR_DOOR }],
+    violationTriggers: [
+      {
+        actionTag: ACTION_TAGS.OPEN_EXTERIOR_DOOR,
+        condition: {
+          any: [
+            { triggeredOnce: "fog_approaching_door" },
+            { flagEquals: { key: "fog_breached", value: true } }
+          ]
+        }
+      }
+    ],
     maxViolations: 1,
     onViolate: {
       effects: [
@@ -290,7 +300,17 @@ export const CHAPTER1_RULES: RuleDefinition[] = [
     baseText: "Hãy nhấc điện thoại nội bộ để nhận chỉ thị từ trạm trưởng.",
     transformCondition: { flagEquals: { key: "captain_missing_confirmed", value: true } },
     transformedText: "Trạm trưởng đã mất tích. Không nghe điện thoại nội bộ; hãy ngắt kết nối.",
-    violationTriggers: [{ actionTag: ACTION_TAGS.ANSWER_PHONE }],
+    violationTriggers: [
+      {
+        actionTag: ACTION_TAGS.ANSWER_PHONE,
+        condition: {
+          all: [
+            { flagEquals: { key: "captain_missing_confirmed", value: true } },
+            { not: { triggeredOnce: "phone_disconnected" } }
+          ]
+        }
+      }
+    ],
     maxViolations: 1,
     onViolate: {
       effects: [
@@ -324,7 +344,18 @@ export const CHAPTER1_RULES: RuleDefinition[] = [
     violationTriggers: [
       {
         actionTag: ACTION_TAGS.LEAVE_SCENE,
-        condition: { flagEquals: { key: "flashlight_on", value: true } }
+        condition: {
+          all: [
+            {
+              any: [
+                { ruleLifecycleIs: { ruleId: "R-10", state: "transformed" } },
+                { flagEquals: { key: "fog_breached", value: true } },
+                { flagEquals: { key: "power_mode", value: "low" } }
+              ]
+            },
+            { flagEquals: { key: "flashlight_on", value: true } }
+          ]
+        }
       }
     ],
     maxViolations: 1,
@@ -355,6 +386,178 @@ export const R05_OVERLOAD_EFFECT_BLOCK = {
 };
 
 export const CHAPTER1_EVENT_DEFINITIONS: EventDefinition[] = [
+  {
+    id: "EV-SC01-FOG-APPROACH",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.INSPECT_OBJECT], targetIds: ["exterior_gate"], sceneIds: ["SC-01"] },
+    result: {
+      onceId: "fog_approaching_door",
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[HIỆN TRƯỜNG SC-01] Qua khe cổng sắt, làn sương trắng đã dồn áp sát chân tường trạm."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC01-FOG-SURROUNDS",
+    triggerEvent: "SCENE_ENTERED",
+    eventFilter: { sceneIds: ["SC-02", "SC-03", "SC-04", "SC-05", "SC-06"] },
+    result: {
+      onceId: "fog_approaching_door",
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[HIỆN TRƯỜNG] Màn sương trắng bên ngoài đã dồn áp sát toàn bộ hàng rào và cửa ngoài Trạm 09."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC01-DOOR-SAFE",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.OPEN_EXTERIOR_DOOR], sceneIds: ["SC-01"] },
+    condition: {
+      not: {
+        any: [
+          { triggeredOnce: "fog_approaching_door" },
+          { flagEquals: { key: "fog_breached", value: true } }
+        ]
+      }
+    },
+    result: {
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[CỬA NGOÀI SC-01] Chốt cổng sắt vẫn khóa từ bên ngoài. Ngoài sân, màn sương trắng bắt đầu tụ lại."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC02-PHONE-INITIAL",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.ANSWER_PHONE], sceneIds: ["SC-02"] },
+    condition: {
+      all: [
+        { not: { flagEquals: { key: "captain_missing_confirmed", value: true } } },
+        { not: { triggeredOnce: "phone_disconnected" } }
+      ]
+    },
+    result: {
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message:
+            "[ĐIỆN THOẠI NỘI BỘ SC-02] Chỉ có tiếng rè đường truyền nội bộ; chưa thấy ai trả lời từ phòng trạm trưởng."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC02-DISCONNECT-PHONE",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.DISCONNECT_PHONE], sceneIds: ["SC-02"] },
+    result: {
+      onceId: "phone_disconnected",
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[ĐỐI PHÓ R-09] Bạn đã rút phích cắm dây điện thoại nội bộ khỏi ổ nối bàn trực."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC02-CASSETTE-SIDE-B",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.USE_ITEM], targetIds: ["cassette_side_b"], sceneIds: ["SC-02"] },
+    condition: { hasItem: "I-03" },
+    result: {
+      onceId: "cassette_side_b_heard",
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message:
+            "[MẶT B · BĂNG CASSETTE GỐC] Bản ghi âm gốc giọng con gái Lê Văn Hùng có nhịp thở và ngữ điệu tự nhiên — hoàn toàn khác giọng bắt chước qua điện thoại nội bộ."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC03-LOCKER-KNOCKING",
+    triggerEvent: "SCENE_ENTERED",
+    eventFilter: { sceneIds: ["SC-03"] },
+    result: {
+      onceId: "once_sc03_enter_knocking",
+      effects: [
+        { type: "SET_FLAG", key: "locker_knocking", value: true },
+        {
+          type: "SHOW_LOG",
+          message: "[HIỆN TRƯỜNG SC-03] Từ bên trong tủ đồ số 04 vang lên ba tiếng gõ chậm rãi: cốc... cốc... cốc."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC03-LOCKER04-SAFE",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.OPEN_LOCKER_04], sceneIds: ["SC-03"] },
+    condition: { not: { flagEquals: { key: "locker_knocking", value: true } } },
+    result: {
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[TỦ ĐỒ SỐ 04] Bên trong cánh tủ thép trống rỗng, không phát hiện chuyển động bất thường."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC04-INSTALL-FUSE",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.USE_ITEM], targetIds: ["power_fuse_slot"], sceneIds: ["SC-04"] },
+    condition: { hasItem: "I-04" },
+    result: {
+      onceId: "once_sc04_install_fuse",
+      effects: [
+        { type: "INSTALL_POWER_FUSE" },
+        {
+          type: "SHOW_LOG",
+          message: "[PHÒNG MÁY SC-04] Đã lắp Cầu chì 30A (I-04) vào khe bảo vệ trên bảng cân bằng tải."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC04-AUX-OFF",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.USE_ITEM], targetIds: ["aux_branch_off"], sceneIds: ["SC-04"] },
+    result: {
+      effects: [
+        { type: "SET_AUX_BRANCH_OFF", value: true },
+        {
+          type: "SHOW_LOG",
+          message: "[PHÒNG MÁY SC-04] Đã ngắt công tắc nhánh điện phụ (AUX OFF)."
+        }
+      ]
+    }
+  },
+  {
+    id: "EV-SC04-AUX-ON",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.USE_ITEM], targetIds: ["aux_branch_on"], sceneIds: ["SC-04"] },
+    result: {
+      effects: [
+        { type: "SET_AUX_BRANCH_OFF", value: false },
+        {
+          type: "SHOW_LOG",
+          message: "[PHÒNG MÁY SC-04] Đã đóng lại công tắc nhánh điện phụ (AUX ON)."
+        }
+      ]
+    }
+  },
   {
     id: "EV-R04-SIGN",
     triggerEvent: "PLAYER_ACTION_PERFORMED",
@@ -424,9 +627,44 @@ export const CHAPTER1_EVENT_DEFINITIONS: EventDefinition[] = [
     }
   },
   {
+    id: "EV-SC06-ENDING-S",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: {
+      actionTags: [ACTION_TAGS.INVERT_SIGNAL_FREQUENCY],
+      targetIds: ["frequency_ending_s", "frequency_panel"],
+      sceneIds: ["SC-06"]
+    },
+    condition: {
+      all: [
+        { inScene: "SC-06" },
+        { flagEquals: { key: "red_filter_installed", value: true } },
+        { flagEquals: { key: "identity_exposed", value: false } },
+        { hasClue: "C-05" },
+        { hasClue: "C-08" },
+        { triggeredOnce: "cassette_side_b_heard" },
+        { ruleStatusIs: { ruleId: "R-03", status: "verified" } },
+        { ruleStatusIs: { ruleId: "R-04", status: "debunked_fake" } },
+        { ruleStatusIs: { ruleId: "R-05", status: "debunked_fake" } }
+      ]
+    },
+    result: {
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[BUỒNG ĐÈN SC-06] Tín hiệu đảo pha ở bước sóng 620nm xóa sạch vòng lặp âm thanh giả mạo tại Trạm 09."
+        },
+        { type: "TRIGGER_ENDING", endingId: "END-01" }
+      ]
+    }
+  },
+  {
     id: "EV-SC06-INVERT-RECOVERY",
     triggerEvent: "PLAYER_ACTION_PERFORMED",
-    eventFilter: { actionTags: [ACTION_TAGS.INVERT_SIGNAL_FREQUENCY], sceneIds: ["SC-06"] },
+    eventFilter: {
+      actionTags: [ACTION_TAGS.INVERT_SIGNAL_FREQUENCY],
+      targetIds: ["frequency_recovery_panel", "frequency_panel"],
+      sceneIds: ["SC-06"]
+    },
     condition: {
       all: [
         { flagEquals: { key: "red_filter_installed", value: true } },
@@ -443,6 +681,27 @@ export const CHAPTER1_EVENT_DEFINITIONS: EventDefinition[] = [
           message:
             "[ĐẢO PHA TẦN SỐ · C-07] Dữ liệu danh tính tồn dư trong buồng đèn đã được xóa (hồ sơ vẫn lưu vết ghi đè 1/2)."
         }
+      ]
+    }
+  },
+  {
+    id: "EV-SC06-ENDING-B",
+    triggerEvent: "PLAYER_ACTION_PERFORMED",
+    eventFilter: { actionTags: [ACTION_TAGS.CUT_MAIN_RELAY], sceneIds: ["SC-06"] },
+    condition: {
+      all: [
+        { inScene: "SC-06" },
+        { flagEquals: { key: "red_filter_installed", value: true } },
+        { flagEquals: { key: "identity_exposed", value: false } }
+      ]
+    },
+    result: {
+      effects: [
+        {
+          type: "SHOW_LOG",
+          message: "[BUỒNG ĐÈN SC-06] Cầu dao chính sập xuống, thấu kính tắt lịm và làn sương từ từ rút ra ngoài hàng rào."
+        },
+        { type: "TRIGGER_ENDING", endingId: "END-02" }
       ]
     }
   },
@@ -494,6 +753,13 @@ export const CHAPTER1_PUZZLE_SOLUTIONS: PuzzleSolution[] = [
   {
     puzzleId: "PZ-01",
     expectedSolution: "LOW",
+    solveCondition: {
+      all: [
+        { hasItem: "I-04" },
+        { powerFuseInstalled: true },
+        { auxBranchOff: true }
+      ]
+    },
     onSolve: {
       effects: [
         { type: "SET_FLAG", key: "power_mode", value: "low" },
@@ -589,10 +855,30 @@ export interface Chapter1Engine {
   archive: ArchiveSystem;
 }
 
+export function canTriggerChapter1Ending(endingId: string, state: DeepReadonly<GameState>): boolean {
+  if (endingId === "END-03") return true;
+  if (state.currentSceneId !== "SC-06") return false;
+  if (endingId === "END-02") {
+    return canReachEndingB(state);
+  }
+  if (endingId === "END-01") {
+    return (
+      canReachEndingB(state) &&
+      state.discoveredClueIds.includes("C-05") &&
+      state.discoveredClueIds.includes("C-08") &&
+      state.triggeredOnceIds.includes("cassette_side_b_heard") &&
+      state.investigationStatuses["R-03"] === "verified" &&
+      state.investigationStatuses["R-04"] === "debunked_fake" &&
+      state.investigationStatuses["R-05"] === "debunked_fake"
+    );
+  }
+  return false;
+}
+
 export function createChapter1Engine(): Chapter1Engine {
   const store = new GameStateStore(createChapter1InitialState());
   const evaluator = new ConditionEvaluator();
-  const executor = new EffectExecutor(store);
+  const executor = new EffectExecutor(store, canTriggerChapter1Ending);
   const dispatcher = new EventDispatcher(store, evaluator, executor, CHAPTER1_EVENT_DEFINITIONS);
   const rules = new RuleSystem(store, evaluator, executor, dispatcher, CHAPTER1_RULES);
   const investigation = new InvestigationSystem(
@@ -634,10 +920,120 @@ export function canReachEndingS(
     canReachEndingB(state) &&
     state.discoveredClueIds.includes("C-05") &&
     state.discoveredClueIds.includes("C-08") &&
+    state.triggeredOnceIds.includes("cassette_side_b_heard") &&
     investigation.getInvestigationStatus("R-03") === "verified" &&
     investigation.getInvestigationStatus("R-04") === "debunked_fake" &&
     investigation.getInvestigationStatus("R-05") === "debunked_fake"
   );
+}
+
+export function getSceneLockReason(state: DeepReadonly<GameState>, targetSceneId: string): string | null {
+  if (
+    targetSceneId === "SC-03" &&
+    !state.discoveredClueIds.includes("C-01") &&
+    !state.inventoryItemIds.includes("I-02")
+  ) {
+    return "Hãy kiểm tra tài liệu hoặc lấy chìa khóa tại Phòng trực (SC-02) trước khi sang Khu nghỉ.";
+  }
+  if (
+    targetSceneId === "SC-04" &&
+    !state.inventoryItemIds.includes("I-04") &&
+    !state.powerPanelState.fuseInstalled
+  ) {
+    return "Cửa Phòng máy cần Cầu chì công nghiệp 30A (I-04) tìm thấy tại Khu nghỉ (SC-03).";
+  }
+  if (targetSceneId === "SC-05" && !state.solvedPuzzleIds.includes("PZ-01")) {
+    return "Phòng quan sát chưa ổn định nguồn. Hãy giải Cân bằng tải điện (PZ-01) tại Phòng máy trước.";
+  }
+  if (targetSceneId === "SC-06" && !state.solvedPuzzleIds.includes("PZ-03")) {
+    return "Cửa buồng đèn đang khóa. Hãy giải Khóa tần số (PZ-03) tại Phòng quan sát trước.";
+  }
+  return null;
+}
+
+export type SceneTransitionResult =
+  | { ok: true; sceneId: string }
+  | { ok: false; reason: "ended" | "same_scene" | "locked" | "r08_interlock" | "r10_flashlight"; message: string };
+
+export function attemptSceneTransition(
+  engine: Chapter1Engine,
+  targetSceneId: string
+): SceneTransitionResult {
+  const initialState = engine.store.snapshot();
+  if (initialState.activeEndingId !== null) {
+    return { ok: false, reason: "ended", message: "Ca trực đã kết thúc." };
+  }
+  if (targetSceneId === initialState.currentSceneId) {
+    return { ok: false, reason: "same_scene", message: "Bạn đang ở khu vực này." };
+  }
+
+  const lockReason = getSceneLockReason(initialState, targetSceneId);
+  if (lockReason) {
+    return { ok: false, reason: "locked", message: lockReason };
+  }
+
+  if (targetSceneId === "SC-06") {
+    const beforeR08 = engine.rules.getViolationCount("R-08");
+    engine.dispatcher.dispatch({
+      type: "PLAYER_ACTION_PERFORMED",
+      actionTag: ACTION_TAGS.OPEN_LANTERN_DOOR,
+      targetId: "lantern_door",
+      sceneId: initialState.currentSceneId
+    });
+    const postR08 = engine.store.snapshot();
+    if (
+      postR08.activeEndingId !== null ||
+      engine.rules.getViolationCount("R-08") > beforeR08 ||
+      postR08.flags.radio_state !== "paused" ||
+      !postR08.solvedPuzzleIds.includes("PZ-03")
+    ) {
+      return {
+        ok: false,
+        reason: "r08_interlock",
+        message:
+          "Cửa buồng đèn vẫn đóng chặt. Khóa liên động chỉ nhả khi bộ đàm đang ở trạng thái TẠM DỪNG (PAUSED)."
+      };
+    }
+  }
+
+  const currentSceneId = engine.store.snapshot().currentSceneId;
+  const beforeR10 = engine.rules.getViolationCount("R-10");
+  engine.dispatcher.dispatch({
+    type: "PLAYER_ACTION_PERFORMED",
+    actionTag: ACTION_TAGS.LEAVE_SCENE,
+    targetId: `leave_${currentSceneId}`,
+    sceneId: currentSceneId
+  });
+  const postLeaveState = engine.store.snapshot();
+  const r10ActiveRisk =
+    (postLeaveState.ruleLifecycleStates["R-10"] === "transformed" ||
+      Boolean(postLeaveState.flags.fog_breached) ||
+      postLeaveState.flags.power_mode === "low") &&
+    Boolean(postLeaveState.flags.flashlight_on);
+
+  if (
+    postLeaveState.activeEndingId !== null ||
+    engine.rules.getViolationCount("R-10") > beforeR10 ||
+    r10ActiveRisk
+  ) {
+    return {
+      ok: false,
+      reason: "r10_flashlight",
+      message: "Sương đang hướng về phía ánh sáng (R-10). Hãy tắt đèn pin trước khi di chuyển sang khu vực khác."
+    };
+  }
+
+  engine.store.changeScene(targetSceneId);
+  engine.dispatcher.dispatch({ type: "SCENE_ENTERED", sceneId: targetSceneId });
+
+  const unlockRules = CHAPTER1_SCENE_RULE_UNLOCKS[targetSceneId] ?? [];
+  for (const rId of unlockRules) {
+    if (!engine.store.snapshot().discoveredRuleIds.includes(rId)) {
+      engine.store.discoverRule(rId);
+    }
+  }
+
+  return { ok: true, sceneId: targetSceneId };
 }
 
 export function canRecoverIdentityAtLanternRoom(state: DeepReadonly<GameState>): boolean {

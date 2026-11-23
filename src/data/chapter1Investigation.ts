@@ -39,11 +39,11 @@ export const CHAPTER1_CLUES: ClueDefinition[] = [
   },
   {
     id: "C-05",
-    title: "Băng cassette (Mặt A & Mặt B)",
+    title: "Băng cassette — Mặt A (Cảnh báo của Trần Minh)",
     category: "audio_transcript",
-    summary: "Mặt A chứa cảnh báo của Trần Minh; Mặt B lưu bản ghi âm gốc giọng con gái Hùng.",
+    summary: "Mặt A ghi lời cảnh báo của Trần Minh về tủ đồ số 04 (R-06) và khóa liên động buồng đèn (R-08).",
     detailContent:
-      "[Mặt A - Giọng Trần Minh]: 'Nếu ai nghe được băng này, đừng mở tủ 04 khi có tiếng gõ. Khóa liên động buồng đèn chỉ nhả chốt khi bộ đàm đang ở trạng thái tạm dừng.' — [Mặt B - Bản ghi âm gốc]: Giữa tiếng rè tĩnh điện là giọng một bé gái gọi 'Bố Hùng ơi, mở cửa cho con...'. Âm thanh có nhịp thở tự nhiên, ngắt nghỉ và biến đổi ngữ điệu như một bản ghi âm đời thực. Đây là giọng nói thật được lưu trên băng, không phải giọng nói phát ra từ điện thoại nội bộ.",
+      "[Mặt A - Giọng Trần Minh]: 'Nếu ai nghe được băng này, đừng mở tủ 04 khi có tiếng gõ. Khóa liên động buồng đèn chỉ nhả chốt khi bộ đàm đang ở trạng thái tạm dừng.' — Mặt B của cuộn băng vẫn cần được lật phát riêng trên máy cassette.",
     relatedRuleIds: ["R-06", "R-08"],
   },
   {

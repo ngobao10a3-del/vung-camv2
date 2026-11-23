@@ -68,7 +68,16 @@ export class PuzzleSystem {
     if (definition.maxAttempts !== undefined && attemptsUsed >= definition.maxAttempts) {
       return { status: "locked", attemptsUsed, remainingAttempts: 0 };
     }
-    if (solution.solveCondition && !this.evaluator.evaluate(solution.solveCondition, this.store.snapshot())) {
+
+    const specificFailBlock = !Array.isArray(submission)
+      ? solution.onFailBySubmission?.[normalizeToken(submission)]
+      : undefined;
+
+    if (
+      !specificFailBlock &&
+      solution.solveCondition &&
+      !this.evaluator.evaluate(solution.solveCondition, this.store.snapshot())
+    ) {
       return { status: "missing_items", attemptsUsed, remainingAttempts: calcRemaining(attemptsUsed) };
     }
     if (definition.solutionType === "item_combination") {
@@ -96,9 +105,6 @@ export class PuzzleSystem {
       targetId: puzzleId,
       sceneId: this.store.snapshot().currentSceneId
     });
-    const specificFailBlock = !Array.isArray(submission)
-      ? solution.onFailBySubmission?.[normalizeToken(submission)]
-      : undefined;
     if (specificFailBlock) {
       for (const evt of this.executor.execute(specificFailBlock)) {
         this.dispatcher.dispatch(evt);
