@@ -18,6 +18,8 @@ export type GameEffect =
   | { type: "CHANGE_SCENE"; sceneId: string }
   | { type: "TRIGGER_FX"; fx: ScreenFxType; durationMs: number }
   | { type: "SHOW_LOG"; message: string }
+  | { type: "RECORD_IDENTITY_OVERWRITE"; onceKey: string; reason: string }
+  | { type: "SET_DEATH_REASON"; reason: string }
   | { type: "TRIGGER_ENDING"; endingId: string };
 
 export interface EffectBlock {

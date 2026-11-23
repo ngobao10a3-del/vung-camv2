@@ -1,3 +1,4 @@
+import type { Condition } from "./conditions";
 import type { EffectBlock } from "./effects";
 
 export type FlagValue = string | number | boolean | null;
@@ -44,8 +45,10 @@ export interface PuzzleDefinition {
 export interface PuzzleSolution {
   puzzleId: string;
   expectedSolution: string | string[];
+  solveCondition?: Condition;
   onSolve: EffectBlock;
   onFail?: EffectBlock;
+  onFailBySubmission?: Record<string, EffectBlock>;
 }
 
 export type EntityRole = "environmental" | "stalking";

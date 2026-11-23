@@ -28,6 +28,9 @@ export interface GameState {
   readArchiveIds: string[];
   logs: string[];
   activeEndingId: string | null;
+  identityOverwriteCount: number;
+  lastOverwriteReason?: string;
+  deathReason?: string;
 }
 
 export interface SaveData {

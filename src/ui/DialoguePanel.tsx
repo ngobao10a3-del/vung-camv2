@@ -24,6 +24,8 @@ type Props = {
   onStateChange: () => void;
   onCloseDialogue: () => void;
   typewriterSpeedMs?: number;
+  identityOverwriteCount?: number;
+  lastOverwriteReason?: string;
 };
 
 type VisualExpression = "neutral" | "tense" | "shadowed" | "static" | "distorted";
@@ -196,7 +198,9 @@ export function DialoguePanel({
   activeDialogue,
   onStateChange,
   onCloseDialogue,
-  typewriterSpeedMs = 16
+  typewriterSpeedMs = 16,
+  identityOverwriteCount = 0,
+  lastOverwriteReason
 }: Props) {
   const [typewriter, setTypewriter] = useState<TypewriterState>(() => createTypewriterState(node.text));
 
@@ -325,16 +329,29 @@ export function DialoguePanel({
             </div>
           </div>
 
+          {identityOverwriteCount > 0 && (
+            <div
+              className={`overwrite-status-banner ${identityOverwriteCount >= 2 ? "critical" : "warn"}`}
+              role="status"
+            >
+              <strong>
+                {identityOverwriteCount >= 2
+                  ? "MỨC GHI ĐÈ: 2/2 — DANH TÍNH ĐÃ BỊ GHI ĐÈ"
+                  : "MỨC GHI ĐÈ: 1/2 — CẢNH BÁO NGUY HIỂM"}
+              </strong>
+              {lastOverwriteReason && <span>{lastOverwriteReason}</span>}
+            </div>
+          )}
+
           {availableChoices.length > 0 ? (
             <div className="choice-bar" aria-label="Lựa chọn hội thoại">
               {availableChoices.map(choiceItem => (
                 <button
                   key={choiceItem.id}
                   type="button"
-                  className={`choice-btn ${choiceItem.isRisky ? "risky-choice" : ""}`}
+                  className="choice-btn"
                   onClick={() => handleSelectChoice(choiceItem)}
                 >
-                  {choiceItem.isRisky && <span className="choice-warn-mark" aria-hidden="true">!</span>}
                   <span>{choiceItem.label}</span>
                 </button>
               ))}

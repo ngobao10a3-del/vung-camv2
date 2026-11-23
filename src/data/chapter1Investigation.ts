@@ -32,9 +32,9 @@ export const CHAPTER1_CLUES: ClueDefinition[] = [
     id: "C-04",
     title: "Sơ đồ tải điện và thấu kính",
     category: "blueprint",
-    summary: "Bản vẽ kỹ thuật mô tả quan hệ giữa mức tải điện và độ khuếch đại thấu kính.",
+    summary: "Bản vẽ kỹ thuật mô tả ba chế độ tải điện LOW, NORMAL, OVERLOAD và ảnh hưởng lên radar cùng thấu kính.",
     detailContent:
-      "Bản vẽ chỉ rõ: ở chế độ OVERLOAD, thấu kính Fresnel khuếch đại chùm quét xuyên qua vách ngăn toàn trạm và làm quá tải rơ-le khóa cổng. Ngược lại, chế độ tải LOW giúp triệt tiêu nhiễu cao tần, cho phép thiết bị radar quan sát hoạt động ổn định.",
+      "Bản vẽ kỹ thuật phân rõ ba chế độ tải điện tại Phòng máy:\n• LOW (Chế độ tải thấp): Hạ áp nhánh phụ để triệt tiêu nhiễu cao tần, là mức tải bắt buộc giúp thiết bị radar quan sát ở SC-05 đo được vùng mù thấu kính.\n• NORMAL (Chế độ tải tiêu chuẩn): Duy trì vận hành thông thường của trạm nhưng không lọc được nhiễu cao tần, khiến màn hình radar bị nhiễu sóng mang.\n• OVERLOAD (Chế độ quá tải): Đẩy công suất thấu kính Fresnel vượt ngưỡng để khuếch đại chùm quét xuyên qua vách ngăn toàn trạm và làm quá tải rơ-le khóa cổng.",
     relatedRuleIds: ["R-05", "R-07"],
   },
   {

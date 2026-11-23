@@ -91,7 +91,8 @@ export function createInitialState(chapterId = "CH-01", sceneId = "SC-01"): Game
     characterStates: {},
     readArchiveIds: [],
     logs: ["Bạn vừa bước vào Trạm Hải Đăng Mũi Sương."],
-    activeEndingId: null
+    activeEndingId: null,
+    identityOverwriteCount: 0
   };
 }
 
@@ -138,7 +139,8 @@ export class GameStateStore {
       characterStates: {},
       readArchiveIds: [],
       logs: [],
-      activeEndingId: null
+      activeEndingId: null,
+      identityOverwriteCount: 0
     });
   }
 
@@ -293,6 +295,25 @@ export class GameStateStore {
     return true;
   }
 
+  recordIdentityOverwrite(reason: string): number {
+    const nextCount = Math.min(2, Math.max(0, this.state.identityOverwriteCount ?? 0) + 1);
+    this.state = {
+      ...this.state,
+      identityOverwriteCount: nextCount,
+      lastOverwriteReason: reason
+    };
+    return nextCount;
+  }
+
+  setDeathReason(reason: string): boolean {
+    if (this.state.deathReason === reason) return false;
+    this.state = {
+      ...this.state,
+      deathReason: reason
+    };
+    return true;
+  }
+
   toggleObservationMode(force?: boolean): boolean {
     const next = force ?? !this.state.observationMode;
     this.state = { ...this.state, observationMode: next };
@@ -392,13 +413,28 @@ export class GameStateStore {
     ) {
       return false;
     }
-    this.state = clone({
+    const rawCount = save.state.identityOverwriteCount;
+    const normalizedOverwriteCount =
+      typeof rawCount === "number" && Number.isFinite(rawCount)
+        ? Math.max(0, Math.min(2, Math.floor(rawCount)))
+        : 0;
+
+    const nextState: GameState = {
       ...save.state,
       puzzleAttempts: save.state.puzzleAttempts ?? {},
       completedDialogueIds: Array.isArray(save.state.completedDialogueIds) ? save.state.completedDialogueIds : [],
       characterStates: save.state.characterStates ? { ...save.state.characterStates } : {},
-      readArchiveIds: Array.isArray(save.state.readArchiveIds) ? save.state.readArchiveIds : []
-    });
+      readArchiveIds: Array.isArray(save.state.readArchiveIds) ? save.state.readArchiveIds : [],
+      identityOverwriteCount: normalizedOverwriteCount
+    };
+    if (typeof save.state.lastOverwriteReason !== "string") {
+      delete nextState.lastOverwriteReason;
+    }
+    if (typeof save.state.deathReason !== "string") {
+      delete nextState.deathReason;
+    }
+
+    this.state = clone(nextState);
     return true;
   }
 }

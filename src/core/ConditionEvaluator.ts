@@ -32,6 +32,9 @@ export class ConditionEvaluator {
     if ("entityStateIs" in condition) {
       return state.entityStates[condition.entityStateIs.entityId] === condition.entityStateIs.state;
     }
+    if ("triggeredOnce" in condition) {
+      return state.triggeredOnceIds.includes(condition.triggeredOnce);
+    }
 
     return false;
   }

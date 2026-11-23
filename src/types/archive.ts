@@ -8,6 +8,11 @@ export type ArchiveDocumentCategory =
   | "technical"
   | "cctv";
 
+export interface ArchiveUnlockAnyGate {
+  conditions?: Condition[];
+  completedDialogueIds?: string[];
+}
+
 export interface ArchiveDocumentDefinition {
   id: string;
   title: string;
@@ -16,5 +21,6 @@ export interface ArchiveDocumentDefinition {
   relatedSceneId: string;
   relatedClueIds: string[];
   unlockCondition: Condition;
+  unlockRequiresAnyOf?: ArchiveUnlockAnyGate;
   content: string;
 }

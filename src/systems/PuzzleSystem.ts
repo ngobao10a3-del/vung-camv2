@@ -1,4 +1,5 @@
 import type { PuzzleDefinition, PuzzleSolution } from "../types/common";
+import { ConditionEvaluator } from "../core/ConditionEvaluator";
 import { EffectExecutor } from "../core/EffectExecutor";
 import { EventDispatcher } from "../core/EventDispatcher";
 import { GameStateStore } from "../core/GameStateStore";
@@ -20,7 +21,8 @@ export class PuzzleSystem {
     private readonly executor: EffectExecutor,
     private readonly dispatcher: EventDispatcher,
     definitions: readonly PuzzleDefinition[] = [],
-    solutions: readonly PuzzleSolution[] = []
+    solutions: readonly PuzzleSolution[] = [],
+    private readonly evaluator: ConditionEvaluator = new ConditionEvaluator()
   ) {
     this.registerPuzzles(definitions, solutions);
   }
@@ -57,11 +59,17 @@ export class PuzzleSystem {
     const calcRemaining = (used: number): number | null =>
       definition.maxAttempts === undefined ? null : Math.max(0, definition.maxAttempts - used);
 
+    if (this.store.snapshot().activeEndingId !== null) {
+      return { status: "locked", attemptsUsed, remainingAttempts: calcRemaining(attemptsUsed) };
+    }
     if (this.isSolved(puzzleId)) {
       return { status: "already_solved", attemptsUsed, remainingAttempts: calcRemaining(attemptsUsed) };
     }
     if (definition.maxAttempts !== undefined && attemptsUsed >= definition.maxAttempts) {
       return { status: "locked", attemptsUsed, remainingAttempts: 0 };
+    }
+    if (solution.solveCondition && !this.evaluator.evaluate(solution.solveCondition, this.store.snapshot())) {
+      return { status: "missing_items", attemptsUsed, remainingAttempts: calcRemaining(attemptsUsed) };
     }
     if (definition.solutionType === "item_combination") {
       const submittedItems = Array.isArray(submission) ? submission : [submission];
@@ -88,7 +96,14 @@ export class PuzzleSystem {
       targetId: puzzleId,
       sceneId: this.store.snapshot().currentSceneId
     });
-    if (solution.onFail) {
+    const specificFailBlock = !Array.isArray(submission)
+      ? solution.onFailBySubmission?.[normalizeToken(submission)]
+      : undefined;
+    if (specificFailBlock) {
+      for (const evt of this.executor.execute(specificFailBlock)) {
+        this.dispatcher.dispatch(evt);
+      }
+    } else if (solution.onFail) {
       for (const evt of this.executor.execute(solution.onFail)) {
         this.dispatcher.dispatch(evt);
       }

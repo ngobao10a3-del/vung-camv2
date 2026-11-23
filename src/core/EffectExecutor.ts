@@ -7,11 +7,10 @@ export class EffectExecutor {
 
   execute(block: EffectBlock | undefined): GameEvent[] {
     if (!block || block.effects.length === 0) return [];
-
-    // Chụp ngữ cảnh scene một lần duy nhất tại thời điểm bắt đầu EffectBlock
-    const executionSceneId = this.store.snapshot().currentSceneId;
+    if (this.store.snapshot().activeEndingId !== null) return [];
 
     // Khóa onceId trước khi thực thi hiệu ứng để chống tái kích hoạt
+    const executionSceneId = this.store.snapshot().currentSceneId;
     if (block.onceId && !this.store.markOnce(block.onceId)) {
       return [];
     }
@@ -138,6 +137,46 @@ export class EffectExecutor {
       case "SHOW_LOG":
         this.store.addLog(effect.message);
         return [{ type: "STATE_CHANGED", domain: "logs", sceneId: executionSceneId }];
+
+      case "SET_DEATH_REASON": {
+        if (this.store.snapshot().activeEndingId !== null) return [];
+        const changed = this.store.setDeathReason(effect.reason);
+        return changed
+          ? [{ type: "STATE_CHANGED", domain: "flags", targetId: "deathReason", sceneId: executionSceneId }]
+          : [];
+      }
+
+      case "RECORD_IDENTITY_OVERWRITE": {
+        if (this.store.snapshot().activeEndingId !== null) return [];
+        if (!this.store.markOnce(effect.onceKey)) return [];
+
+        const nextCount = this.store.recordIdentityOverwrite(effect.reason);
+        const exposedChanged = this.store.setFlag("identity_exposed", true);
+        const events: GameEvent[] = [];
+
+        if (exposedChanged) {
+          events.push(
+            { type: "STATE_MUTATED", changedFlags: ["identity_exposed"], sceneId: executionSceneId },
+            { type: "STATE_CHANGED", domain: "flags", targetId: "identity_exposed", sceneId: executionSceneId }
+          );
+        }
+
+        events.push({ type: "FX_REQUESTED", fx: "red_flash", durationMs: 650, sceneId: executionSceneId });
+
+        if (nextCount >= 2) {
+          this.store.addLog(`MỨC GHI ĐÈ: 2/2 — DANH TÍNH ĐÃ BỊ GHI ĐÈ · ${effect.reason}`);
+          events.push({ type: "STATE_CHANGED", domain: "logs", sceneId: executionSceneId });
+          this.store.setDeathReason(effect.reason);
+          if (this.store.setEnding("END-03")) {
+            events.push({ type: "ENDING_REACHED", endingId: "END-03", sceneId: executionSceneId });
+          }
+        } else {
+          this.store.addLog(`MỨC GHI ĐÈ: 1/2 — CẢNH BÁO NGUY HIỂM · ${effect.reason}`);
+          events.push({ type: "STATE_CHANGED", domain: "logs", sceneId: executionSceneId });
+        }
+
+        return events;
+      }
 
       case "TRIGGER_ENDING": {
         const set = this.store.setEnding(effect.endingId);

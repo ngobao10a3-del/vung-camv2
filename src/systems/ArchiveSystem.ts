@@ -1,6 +1,7 @@
 import type { ArchiveDocumentDefinition } from "../types/archive";
+import type { GameState } from "../types/save";
 import { ConditionEvaluator } from "../core/ConditionEvaluator";
-import { GameStateStore } from "../core/GameStateStore";
+import { DeepReadonly, GameStateStore } from "../core/GameStateStore";
 
 export class ArchiveSystem {
   private readonly documents: ArchiveDocumentDefinition[] = [];
@@ -30,18 +31,18 @@ export class ArchiveSystem {
   isUnlocked(documentId: string): boolean {
     const doc = this.documentsById.get(documentId);
     if (!doc) return false;
-    return this.evaluator.evaluate(doc.unlockCondition, this.store.snapshot());
+    return this.evaluateUnlock(doc, this.store.snapshot());
   }
 
   getUnlockedDocuments(): ArchiveDocumentDefinition[] {
     const state = this.store.snapshot();
-    return this.documents.filter(doc => this.evaluator.evaluate(doc.unlockCondition, state));
+    return this.documents.filter(doc => this.evaluateUnlock(doc, state));
   }
 
   getUnlockedDocument(documentId: string): ArchiveDocumentDefinition | undefined {
     const doc = this.documentsById.get(documentId);
     if (!doc) return undefined;
-    return this.evaluator.evaluate(doc.unlockCondition, this.store.snapshot()) ? doc : undefined;
+    return this.evaluateUnlock(doc, this.store.snapshot()) ? doc : undefined;
   }
 
   isRead(documentId: string): boolean {
@@ -56,5 +57,22 @@ export class ArchiveSystem {
   markAsRead(documentId: string): boolean {
     if (!this.isUnlocked(documentId)) return false;
     return this.store.markArchiveRead(documentId);
+  }
+
+  private evaluateUnlock(doc: ArchiveDocumentDefinition, state: DeepReadonly<GameState>): boolean {
+    if (!this.evaluator.evaluate(doc.unlockCondition, state)) {
+      return false;
+    }
+
+    if (doc.unlockRequiresAnyOf) {
+      const { conditions = [], completedDialogueIds = [] } = doc.unlockRequiresAnyOf;
+      const condMatched = conditions.some(cond => this.evaluator.evaluate(cond, state));
+      const dlgMatched = completedDialogueIds.some(dlgId => state.completedDialogueIds.includes(dlgId));
+      if (!condMatched && !dlgMatched) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

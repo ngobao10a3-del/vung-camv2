@@ -16,4 +16,5 @@ export type Condition =
   | { inScene: string }
   | { ruleLifecycleIs: { ruleId: string; state: RuleLifecycleState } }
   | { ruleStatusIs: { ruleId: string; status: InvestigationStatus } }
-  | { entityStateIs: { entityId: string; state: EntityState } };
+  | { entityStateIs: { entityId: string; state: EntityState } }
+  | { triggeredOnce: string };
