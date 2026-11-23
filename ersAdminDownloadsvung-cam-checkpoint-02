@@ -1,0 +1,20 @@
+warning: in the working copy of 'src/data/chapter1Investigation.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/data/chapter1Investigation.ts b/src/data/chapter1Investigation.ts[m
+[1mindex 6fb6010..082504a 100644[m
+[1m--- a/src/data/chapter1Investigation.ts[m
+[1m+++ b/src/data/chapter1Investigation.ts[m
+[36m@@ -73,6 +73,14 @@[m [mexport const CHAPTER1_CLUES: ClueDefinition[] = [[m
+       "Nét chữ run rẩy của Lê Văn Hùng: 'Bản ghi ở mặt B là giọng thật của con bé. Nhưng giọng nói qua điện thoại không phải con bé. Tôi biết có thứ gì đó đang bắt chước giọng con bé, nhưng tôi không nỡ ngắt máy. Nó bảo chỉ cần thêm vài cái tên vào sổ trực và bật quá tải thấu kính, nó sẽ trả con bé lại. Tôi đã viết thêm những quy tắc giả vào sổ trực. Nếu có người đến sau đọc được tờ giấy này, xin hãy đảo ngược tần số buồng đèn.'",[m
+     relatedRuleIds: ["R-04", "R-05", "R-06"],[m
+   },[m
+[32m+[m[32m  {[m
+[32m+[m[32m    id: "C-09",[m
+[32m+[m[32m    title: "Thẻ nhân viên Phạm Quốc Đạt",[m
+[32m+[m[32m    category: "document",[m
+[32m+[m[32m    summary: "Thẻ nhân viên cũ mang tên Phạm Quốc Đạt được tìm thấy bên dưới giường tại SC-03.",[m
+[32m+[m[32m    detailContent: "Một thẻ nhân viên cũ nằm khuất dưới giường sắt tại SC-03. Tên Phạm Quốc Đạt vẫn có thể đọc được. Phần ghi chú ở mặt sau đã bị hư hại. Dữ kiện hiện có chưa đủ để xác định vai trò của người này, thời điểm rời đi hoặc chuyện gì đã xảy ra với người đó.",[m
+[32m+[m[32m    relatedRuleIds: [],[m
+[32m+[m[32m  },[m
+ ];[m
+ [m
+ export const CHAPTER1_DEDUCTION_GROUPS: DeductionGroup[] = [[m
