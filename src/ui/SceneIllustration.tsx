@@ -5,9 +5,24 @@ type Props = {
   flags: Readonly<Record<string, FlagValue>>;
   hasFlashlightItem: boolean;
   solvedPuzzles: readonly string[];
+  fogApproaching?: boolean;
+  phoneDisconnected?: boolean;
+  powerFuseInstalled?: boolean;
+  identityOverwriteCount?: number;
+  radarScanned?: boolean;
 };
 
-export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuzzles }: Props) {
+export function SceneIllustration({
+  sceneId,
+  flags,
+  hasFlashlightItem,
+  solvedPuzzles,
+  fogApproaching = false,
+  phoneDisconnected = false,
+  powerFuseInstalled = false,
+  identityOverwriteCount = 0,
+  radarScanned = false
+}: Props) {
   const fogBreached = Boolean(flags.fog_breached);
   const flashlightOn = Boolean(flags.flashlight_on);
   const radioState = String(flags.radio_state ?? "broadcasting");
@@ -15,46 +30,79 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
   const redFilter = Boolean(flags.red_filter_installed);
   const lockerKnocking = Boolean(flags.locker_knocking);
   const identityExposed = Boolean(flags.identity_exposed);
-  const showPaperAnomaly = fogBreached || identityExposed;
+  const showPaperAnomaly = fogBreached || identityExposed || identityOverwriteCount > 0;
+  const fogStageClass = fogBreached
+    ? "fog-breached"
+    : fogApproaching
+      ? "fog-approaching"
+      : "fog-distant";
 
   return (
-    <div className={`scene-visual scene-bg-${sceneId.toLowerCase()}`} aria-hidden="true">
+    <div
+      className={`scene-visual scene-bg-${sceneId.toLowerCase()} power-${powerMode} ${fogStageClass} ${
+        redFilter ? "red-filter-on" : ""
+      } ${showPaperAnomaly ? "anomaly-marked" : ""}`}
+      aria-hidden="true"
+    >
       <div className="visual-grid" />
+      <div className="power-lighting-veil" />
       {flashlightOn && <div className="flashlight-cone" />}
 
       {sceneId === "SC-01" && (
         <svg className="scene-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice">
           <defs>
             <linearGradient id="sc01Sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#060B0F" />
-              <stop offset="65%" stopColor="#0D171D" />
-              <stop offset="100%" stopColor="#162223" />
+              <stop offset="0%" stopColor="#05090D" />
+              <stop offset="55%" stopColor="#0C161D" />
+              <stop offset="100%" stopColor="#162426" />
             </linearGradient>
             <radialGradient id="towerGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#CFA855" stopOpacity="0.65" />
-              <stop offset="55%" stopColor="#CFA855" stopOpacity="0.16" />
+              <stop offset="0%" stopColor="#CFA855" stopOpacity="0.72" />
+              <stop offset="50%" stopColor="#CFA855" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#CFA855" stopOpacity="0" />
             </radialGradient>
             <linearGradient id="beamSweep" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#E9D8A6" stopOpacity="0.24" />
+              <stop offset="0%" stopColor="#E9D8A6" stopOpacity="0.26" />
               <stop offset="100%" stopColor="#E9D8A6" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="concreteWall" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#1C2624" />
               <stop offset="100%" stopColor="#0B1319" />
             </linearGradient>
+            <linearGradient id="mistBank" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#CBD6D2" stopOpacity="0" />
+              <stop offset="100%" stopColor="#CBD6D2" stopOpacity="0.28" />
+            </linearGradient>
           </defs>
 
-          {/* Đêm biển & nền trời sương mù */}
+          {/* Đêm biển & mũi đá xa */}
           <rect x="0" y="0" width="800" height="320" fill="url(#sc01Sky)" />
+          <path d="M0 198 Q160 182 320 194 T620 186 T800 194 L800 320 L0 320 Z" fill="#0B1318" />
           <path d="M0 218 Q180 202 360 215 T800 208 L800 320 L0 320 Z" fill="#080E12" />
 
-          {/* Hải đăng Mũi Sương phía xa */}
-          <circle cx="576" cy="70" r="88" fill="url(#towerGlow)" />
+          {/* Hải đăng Mũi Sương & chùm đèn quét */}
+          <circle cx="576" cy="70" r="96" fill="url(#towerGlow)" />
+          <g className="sc01-beacon-group">
+            <polygon points="587,66 820,10 820,122 587,75" fill="url(#beamSweep)" />
+            <polygon
+              points="565,67 340,14 340,118 565,75"
+              fill="url(#beamSweep)"
+              opacity="0.45"
+            />
+          </g>
           <polygon points="560,214 568,78 584,78 592,214" fill="#182226" stroke="#2E3B38" strokeWidth="1.5" />
-          <rect x="565" y="64" width="22" height="14" fill="#E6D2A2" opacity="0.88" />
-          <polygon points="587,66 800,18 800,115 587,75" fill="url(#beamSweep)" />
-          <polygon points="565,67 360,22 360,112 565,75" fill="url(#beamSweep)" opacity="0.35" transform="scale(-1,1) translate(-1130,0)" />
+          <rect x="565" y="64" width="22" height="14" fill="#E6D2A2" opacity="0.9" />
+          <circle cx="576" cy="56" r="3" fill="#D93838" className="sc01-warning-beacon" />
+
+          {/* Lớp sương ngoài sân phản ứng theo mức độ áp sát */}
+          <rect
+            x="0"
+            y={fogBreached ? "118" : fogApproaching ? "158" : "188"}
+            width="800"
+            height={fogBreached ? "164" : fogApproaching ? "112" : "68"}
+            fill="url(#mistBank)"
+            opacity={fogBreached ? "0.95" : fogApproaching ? "0.72" : "0.42"}
+          />
 
           {/* Bóng giấy cắt bất thường trong lớp sương khi bị xâm nhập / lộ danh tính */}
           {showPaperAnomaly && (
@@ -70,11 +118,10 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
           <rect x="462" y="130" width="108" height="10" fill="#23302E" stroke="#364642" strokeWidth="1" />
           <rect x="484" y="154" width="64" height="36" fill="#060B0E" stroke="#3D4E4A" strokeWidth="1.5" />
           <line x1="516" y1="154" x2="516" y2="190" stroke="#2E3B38" strokeWidth="1.5" />
-          {/* Bệ gác & Đèn pin cũ */}
           <rect x="478" y="206" width="76" height="8" fill="#2B3734" />
           {!hasFlashlightItem && (
             <g>
-              <circle cx="526" cy="202" r="18" fill="#CFA855" opacity="0.2" />
+              <circle cx="526" cy="202" r="20" fill="#CFA855" opacity="0.24" />
               <rect x="515" y="198" width="22" height="6" rx="1.5" fill="#CFA855" />
               <rect x="534" y="197" width="5" height="8" rx="1" fill="#D8CEB8" />
             </g>
@@ -125,20 +172,29 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
               <stop offset="100%" stopColor="#0E151A" />
             </linearGradient>
             <radialGradient id="deskLamp" cx="50%" cy="20%" r="60%">
-              <stop offset="0%" stopColor="#CFA855" stopOpacity="0.22" />
+              <stop
+                offset="0%"
+                stopColor={powerMode === "overload" ? "#D96A55" : "#CFA855"}
+                stopOpacity={powerMode === "low" ? "0.14" : "0.24"}
+              />
               <stop offset="100%" stopColor="#CFA855" stopOpacity="0" />
             </radialGradient>
           </defs>
 
           <rect x="0" y="0" width="800" height="320" fill="#091015" />
-          {/* Tường bê tông & ánh sáng đèn huỳnh quang cũ */}
           <rect x="0" y="0" width="800" height="200" fill="#0F181D" />
-          <ellipse cx="400" cy="160" rx="290" ry="130" fill="url(#deskLamp)" />
+          <ellipse cx="400" cy="160" rx="305" ry="138" fill="url(#deskLamp)" />
+
+          {/* Đèn tuýp huỳnh quang treo trần */}
+          <rect x="315" y="6" width="170" height="6" rx="3" fill="#D8CEB8" opacity={powerMode === "low" ? "0.35" : "0.75"} />
 
           {/* Cửa sổ đêm nhìn ra sương */}
           <rect x="275" y="22" width="250" height="122" fill="#070C10" stroke="#2E3B38" strokeWidth="3" />
           <line x1="400" y1="22" x2="400" y2="144" stroke="#2E3B38" strokeWidth="2.5" />
           <line x1="275" y1="84" x2="525" y2="84" stroke="#2E3B38" strokeWidth="2" />
+          {fogApproaching && (
+            <rect x="278" y="110" width="244" height="31" fill="#CBD6D2" opacity={fogBreached ? "0.25" : "0.12"} />
+          )}
           {showPaperAnomaly && (
             <g opacity="0.34">
               <ellipse cx="348" cy="72" rx="14" ry="17" fill="#D8CEB8" />
@@ -158,6 +214,24 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
           <line x1="162" y1="135" x2="194" y2="135" stroke="#161A1D" strokeWidth="2" />
           <line x1="160" y1="143" x2="188" y2="143" stroke="#9E2323" strokeWidth="2" />
 
+          {/* Điện thoại nội bộ & trạng thái dây cắm */}
+          <g>
+            <rect x="248" y="198" width="58" height="32" rx="3" fill="#151E22" stroke="#465854" strokeWidth="1.5" />
+            <rect x="254" y="191" width="46" height="9" rx="3" fill="#23302D" stroke="#536661" strokeWidth="1" />
+            <circle
+              cx="296"
+              cy="222"
+              r="3"
+              fill={phoneDisconnected ? "#464C48" : "#D93838"}
+              className={!phoneDisconnected ? "phone-led-pulse" : ""}
+            />
+            {phoneDisconnected ? (
+              <path d="M248 216 Q230 226 226 238" fill="none" stroke="#536661" strokeWidth="2" strokeDasharray="3 2" />
+            ) : (
+              <path d="M248 216 Q230 216 226 196" fill="none" stroke="#85928E" strokeWidth="2" />
+            )}
+          </g>
+
           {/* Sổ trực & Hồ sơ giữa bàn */}
           <rect x="330" y="190" width="140" height="62" rx="2" fill="#B5A88E" stroke="#6E634D" strokeWidth="1.5" />
           <rect x="335" y="194" width="63" height="54" fill="#D8CEB8" />
@@ -168,14 +242,22 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
           {/* Máy bộ đàm VHF bên phải */}
           <rect x="560" y="138" width="102" height="68" rx="3" fill="#141E23" stroke="#465854" strokeWidth="1.5" />
           <line x1="646" y1="138" x2="646" y2="78" stroke="#85928E" strokeWidth="2.5" />
+          <circle
+            cx="574"
+            cy="192"
+            r="3"
+            fill={radioState === "broadcasting" ? "#CFA855" : radioState === "paused" ? "#4B8F6E" : "#3E4845"}
+          />
           <rect x="574" y="152" width="74" height="26" fill="#070C10" stroke="#2E3B38" />
           {radioState === "broadcasting" ? (
-            <polyline
-              points="580,165 590,157 598,173 608,154 618,174 628,158 640,165"
-              fill="none"
-              stroke="#CFA855"
-              strokeWidth="2"
-            />
+            <g className="radio-wave-active">
+              <polyline
+                points="580,165 590,157 598,173 608,154 618,174 628,158 640,165"
+                fill="none"
+                stroke="#CFA855"
+                strokeWidth="2"
+              />
+            </g>
           ) : (
             <line
               x1="580"
@@ -193,12 +275,30 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
         <svg className="scene-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice">
           <defs>
             <linearGradient id="corridorWall" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0D161A" />
-              <stop offset="100%" stopColor="#182321" />
+              <stop offset="0%" stopColor="#091014" />
+              <stop offset="100%" stopColor="#162120" />
             </linearGradient>
+            <radialGradient id="sc03BulbGlow" cx="50%" cy="18%" r="55%">
+              <stop
+                offset="0%"
+                stopColor={powerMode === "overload" ? "#D93838" : "#CFA855"}
+                stopOpacity={powerMode === "low" ? "0.1" : "0.2"}
+              />
+              <stop offset="100%" stopColor="#091014" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
           <rect x="0" y="0" width="800" height="320" fill="url(#corridorWall)" />
+          <rect x="0" y="0" width="800" height="256" fill="url(#sc03BulbGlow)" />
+          <line x1="395" y1="0" x2="395" y2="28" stroke="#344440" strokeWidth="2" />
+          <circle
+            cx="395"
+            cy="32"
+            r="5"
+            fill={powerMode === "overload" ? "#D93838" : "#CFA855"}
+            opacity={powerMode === "low" ? "0.45" : "0.85"}
+          />
+
           <rect x="0" y="256" width="800" height="64" fill="#091014" />
           <line x1="70" y1="256" x2="730" y2="256" stroke="#2E3B38" strokeWidth="2.5" />
 
@@ -219,6 +319,17 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
             const isLocker4 = idx === 3;
             return (
               <g key={idx} className={isLocker4 && lockerKnocking ? "svg-shake" : ""}>
+                {isLocker4 && lockerKnocking && (
+                  <ellipse
+                    cx={x + 32}
+                    cy="254"
+                    rx="46"
+                    ry="10"
+                    fill="#B8C8C4"
+                    opacity="0.22"
+                    className="sc03-locker-frost"
+                  />
+                )}
                 <rect
                   x={x}
                   y="74"
@@ -248,7 +359,18 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
 
       {sceneId === "SC-04" && (
         <svg className="scene-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="sc04PanelGlow" cx="68%" cy="48%" r="42%">
+              <stop
+                offset="0%"
+                stopColor={powerMode === "overload" ? "#D93838" : powerMode === "low" ? "#4B8F6E" : "#CFA855"}
+                stopOpacity="0.22"
+              />
+              <stop offset="100%" stopColor="#0A1217" stopOpacity="0" />
+            </radialGradient>
+          </defs>
           <rect x="0" y="0" width="800" height="320" fill="#0A1217" />
+          <rect x="0" y="0" width="800" height="260" fill="url(#sc04PanelGlow)" />
           <rect x="0" y="260" width="800" height="60" fill="#070C10" />
 
           {/* Đường ống kỹ thuật */}
@@ -271,6 +393,23 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
             stroke={powerMode === "overload" ? "#D93838" : powerMode === "low" ? "#4B8F6E" : "#CFA855"}
             strokeWidth="3"
           />
+          {/* Khe cầu chì 30A */}
+          <rect
+            x="442"
+            y="118"
+            width="28"
+            height="42"
+            rx="2"
+            fill="#070C10"
+            stroke={powerFuseInstalled ? "#4B8F6E" : "#CFA855"}
+            strokeWidth="1.5"
+          />
+          <circle
+            cx="456"
+            cy="139"
+            r="5"
+            fill={powerFuseInstalled ? "#4B8F6E" : "#3E4845"}
+          />
           <rect
             x="476"
             y="194"
@@ -288,6 +427,12 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
 
       {sceneId === "SC-05" && (
         <svg className="scene-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="sc05RadarGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#4B8F6E" stopOpacity={powerMode === "low" ? "0.24" : "0.12"} />
+              <stop offset="100%" stopColor="#081613" stopOpacity="0" />
+            </radialGradient>
+          </defs>
           <rect x="0" y="0" width="800" height="320" fill="#080F14" />
           <rect x="90" y="206" width="620" height="16" fill="#1C2624" stroke="#2E3B38" />
 
@@ -300,11 +445,18 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
             <ellipse cx="216" cy="126" rx="10" ry="13" fill="#D8CEB8" opacity="0.35" />
           )}
 
-          {/* Màn hình Radar trung tâm + Vết xước bán nguyệt */}
+          {/* Màn hình Radar trung tâm + Tia quét quay + Vết xước bán nguyệt */}
+          <circle cx="400" cy="126" r="78" fill="url(#sc05RadarGlow)" />
           <circle cx="400" cy="126" r="70" fill="#081613" stroke="#4B8F6E" strokeWidth="2" />
           <circle cx="400" cy="126" r="46" fill="none" stroke="#4B8F6E" strokeOpacity="0.35" />
           <circle cx="400" cy="126" r="22" fill="none" stroke="#4B8F6E" strokeOpacity="0.35" />
-          <line x1="400" y1="126" x2="452" y2="82" stroke="#4B8F6E" strokeWidth="2" />
+          <g className={`radar-sweep-arm ${powerMode === "low" ? "clean" : "noisy"}`}>
+            <line x1="400" y1="126" x2="452" y2="82" stroke="#6FBF96" strokeWidth="2.2" />
+            <path d="M400 126 L452 82 A68 68 0 0 1 464 114 Z" fill="#4B8F6E" opacity="0.22" />
+          </g>
+          {radarScanned && (
+            <circle cx="430" cy="96" r="4" fill="#CFA855" className="radar-target-ping" />
+          )}
           <path d="M416 68 A56 56 0 0 1 456 146" fill="none" stroke="#D8CEB8" strokeWidth="3.5" opacity="0.65" />
 
           {/* Bảng hiệu chuẩn bên phải */}
@@ -329,24 +481,37 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
 
       {sceneId === "SC-06" && (
         <svg className="scene-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="sc06LensAura" cx="50%" cy="45%" r="55%">
+              <stop
+                offset="0%"
+                stopColor={redFilter ? "#D93838" : "#ECE4CE"}
+                stopOpacity={redFilter ? "0.38" : "0.28"}
+              />
+              <stop offset="100%" stopColor="#070C10" stopOpacity="0" />
+            </radialGradient>
+          </defs>
           <rect x="0" y="0" width="800" height="320" fill="#070C10" />
+          <ellipse cx="400" cy="144" rx="340" ry="155" fill="url(#sc06LensAura)" />
 
           {/* Vòm kính buồng đèn */}
           <line x1="120" y1="0" x2="80" y2="320" stroke="#1C2624" strokeWidth="3" />
           <line x1="680" y1="0" x2="720" y2="320" stroke="#1C2624" strokeWidth="3" />
           <line x1="0" y1="248" x2="800" y2="248" stroke="#2E3B38" strokeWidth="2.5" />
 
-          {/* Luồng sáng thấu kính Fresnel */}
-          <polygon
-            points="400,144 20,24 20,275"
-            fill={redFilter ? "#9E2323" : "#D8CEB8"}
-            opacity={redFilter ? "0.28" : "0.18"}
-          />
-          <polygon
-            points="400,144 780,24 780,275"
-            fill={redFilter ? "#9E2323" : "#D8CEB8"}
-            opacity={redFilter ? "0.28" : "0.18"}
-          />
+          {/* Luồng sáng thấu kính Fresnel xoay nhịp */}
+          <g className="fresnel-rays">
+            <polygon
+              points="400,144 10,16 10,278"
+              fill={redFilter ? "#9E2323" : "#D8CEB8"}
+              opacity={redFilter ? "0.32" : "0.2"}
+            />
+            <polygon
+              points="400,144 790,16 790,278"
+              fill={redFilter ? "#9E2323" : "#D8CEB8"}
+              opacity={redFilter ? "0.32" : "0.2"}
+            />
+          </g>
 
           {/* Trụ thấu kính trung tâm */}
           <rect x="352" y="54" width="96" height="194" rx="10" fill="#111A1E" stroke="#465854" strokeWidth="2" />
@@ -356,7 +521,7 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
             rx="36"
             ry="62"
             fill={redFilter ? "#D93838" : "#ECE4CE"}
-            opacity={redFilter ? "0.78" : "0.86"}
+            opacity={redFilter ? "0.82" : "0.88"}
           />
           <line x1="362" y1="112" x2="438" y2="112" stroke="#1C2624" strokeWidth="2" />
           <line x1="362" y1="144" x2="438" y2="144" stroke="#1C2624" strokeWidth="2" />
@@ -369,13 +534,17 @@ export function SceneIllustration({ sceneId, flags, hasFlashlightItem, solvedPuz
             width="54"
             height="54"
             rx="2"
-            fill={redFilter ? "rgba(158,35,35,0.34)" : "#131C21"}
+            fill={redFilter ? "rgba(158,35,35,0.4)" : "#131C21"}
             stroke={redFilter ? "#D93838" : "#CFA855"}
             strokeWidth="2"
           />
+          {redFilter && (
+            <rect x="231" y="129" width="36" height="36" rx="1" fill="#9E2323" opacity="0.65" />
+          )}
         </svg>
       )}
 
+      <div className="ambient-mist-layer" />
       <div className="stage-fog" />
       <div className="stage-vignette" />
     </div>

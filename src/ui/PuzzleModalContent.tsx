@@ -54,6 +54,7 @@ function WheelLock({
   puzzleId,
   digits,
   disabled,
+  disabledHint,
   submitLabel,
   wheelLabels,
   onChangeDigit,
@@ -62,6 +63,7 @@ function WheelLock({
   puzzleId: string;
   digits: readonly [number, number, number, number];
   disabled: boolean;
+  disabledHint?: string;
   submitLabel: string;
   wheelLabels: readonly [string, string, string, string];
   onChangeDigit: (index: number, delta: number) => void;
@@ -78,6 +80,7 @@ function WheelLock({
               type="button"
               className="wheel-step-btn"
               disabled={disabled}
+              title={disabled ? disabledHint : `Tăng ${wheelLabels[idx]}`}
               aria-label={`Tăng chữ số ${idx + 1} của ${puzzleId}`}
               onClick={() => onChangeDigit(idx, 1)}
             >
@@ -90,6 +93,7 @@ function WheelLock({
               type="button"
               className="wheel-step-btn"
               disabled={disabled}
+              title={disabled ? disabledHint : `Giảm ${wheelLabels[idx]}`}
               aria-label={`Giảm chữ số ${idx + 1} của ${puzzleId}`}
               onClick={() => onChangeDigit(idx, -1)}
             >
@@ -104,6 +108,7 @@ function WheelLock({
           type="button"
           className="btn-primary wheel-submit-btn"
           disabled={disabled}
+          title={disabled ? disabledHint : submitLabel}
           onClick={() => onSubmit(code)}
         >
           {submitLabel}
@@ -243,6 +248,13 @@ export function PuzzleModalContent({
                       type="button"
                       className="btn-ghost-sm"
                       disabled={!hasI04 || fuseInstalled}
+                      title={
+                        fuseInstalled
+                          ? "Cầu chì 30A đã được lắp cố định vào khe bảo vệ."
+                          : !hasI04
+                            ? "Cần lấy Cầu chì 30A (I-04) tại Khu nghỉ nhân viên (SC-03)."
+                            : "Lắp Cầu chì 30A vào khe bảo vệ"
+                      }
                       onClick={() => onInstallPowerFuse?.()}
                     >
                       {fuseInstalled ? "✓ Đã lắp cầu chì 30A" : "Lắp Cầu chì 30A (I-04)"}
@@ -266,7 +278,12 @@ export function PuzzleModalContent({
                 </div>
               </div>
 
-              {!isSolved && !pz01Ready && (
+              {isSolved ? (
+                <div className="pz-feedback-banner tone-ok" role="status">
+                  <strong>CÂN BẰNG TẢI HOÀN TẤT · CHẾ ĐỘ LOW</strong>
+                  <span>Nguồn điện đã hạ tải ổn định. Thiết bị radar tại Phòng quan sát (SC-05) đã có thể đọc tín hiệu sạch nhiễu.</span>
+                </div>
+              ) : !pz01Ready && (
                 <div className="pz-prereq-banner" role="status">
                   Để chuyển mạch sang chế độ <b>LOW</b>: Cần có <b>Cầu chì 30A (I-04)</b>, lắp cầu chì vào khe bảo vệ và gạt nhánh phụ sang <b>AUX OFF</b>.
                 </div>
@@ -282,6 +299,7 @@ export function PuzzleModalContent({
                       type="button"
                       className={`pz-selector-card ${isOverload ? "mode-overload" : ""} ${isActive ? "is-active" : ""}`}
                       disabled={isSolved}
+                      title={isSolved ? "Bảng điều khiển tải đã cố định ở chế độ LOW." : `Gạt công tắc sang ${opt.mode}`}
                       aria-pressed={isActive}
                       onClick={() => onSubmitPuzzle("PZ-01", opt.mode)}
                     >
@@ -362,7 +380,12 @@ export function PuzzleModalContent({
                 )}
               </div>
 
-              {!isSolved && (
+              {isSolved ? (
+                <div className="pz-feedback-banner tone-ok" role="status">
+                  <strong>NGĂN KÉO BÍ MẬT ĐÃ MỞ</strong>
+                  <span>Bạn đã thu giữ Bộ lọc đỏ (I-05) và Bản nháp viết tay bị giấu (C-08) từ bên trong ngăn kéo.</span>
+                </div>
+              ) : (
                 <>
                   {!pz02Unlocked && (
                     <div className="pz-prereq-banner" role="status">
@@ -373,6 +396,7 @@ export function PuzzleModalContent({
                     puzzleId="PZ-02"
                     digits={pz02Digits}
                     disabled={!pz02Unlocked}
+                    disabledHint="Cần nguồn LOW, quét radar quan sát và thu thập Sổ trực Trần Minh (C-02) trước khi mở khóa."
                     submitLabel="Mở ngăn bí mật"
                     wheelLabels={["P1", "P2", "L1", "L2"]}
                     onChangeDigit={(idx, delta) => updateWheel(setPz02Digits, idx, delta)}
@@ -449,7 +473,12 @@ export function PuzzleModalContent({
                 </div>
               </div>
 
-              {!isSolved && (
+              {isSolved ? (
+                <div className="pz-feedback-banner tone-ok" role="status">
+                  <strong>CHỐT KHÓA CƠ KHÍ ĐÃ NHẢ</strong>
+                  <span>Chốt cơ học cửa buồng đèn đã mở. Kiểm tra điều kiện liên động R-08 trước khi tiến lên Buồng đèn (SC-06).</span>
+                </div>
+              ) : (
                 <>
                   {!pz03Unlocked && (
                     <div className="pz-prereq-banner" role="status">
@@ -460,6 +489,7 @@ export function PuzzleModalContent({
                     puzzleId="PZ-03"
                     digits={pz03Digits}
                     disabled={!pz03Unlocked}
+                    disabledHint="Cần thu thập Sổ mã tần số (I-06) và nghe Mặt A Băng cassette (C-05) trước khi giải mã."
                     submitLabel="Nhả chốt khóa cơ học"
                     wheelLabels={["Hz·1", "Hz·2", "Hz·3", "Hz·4"]}
                     onChangeDigit={(idx, delta) => updateWheel(setPz03Digits, idx, delta)}

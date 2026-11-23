@@ -30,8 +30,8 @@ export const CHAPTER1_SCENES: readonly SceneMeta[] = [
     name: "Cổng trạm",
     time: "23:40",
     description:
-      "Cánh cổng sắt ngăn cách bạn với con đường dẫn vào trạm. Sương trắng đang áp sát hàng rào. Một chiếc đèn pin cũ nằm trên bệ gác.",
-    detail: "Phía sau lớp sương, ánh đèn hải đăng vẫn quay đều. Không có bóng người ở vọng gác."
+      "Cánh cổng sắt ngăn cách bạn với con đường dẫn vào trạm. Ngoài hàng rào, một màn sương trắng đang tụ lại phía xa, chưa rõ đã tiến sát tới đâu. Một chiếc đèn pin cũ nằm trên bệ gác.",
+    detail: "Phía xa ngoài hàng rào, ánh đèn hải đăng vẫn quay đều qua lớp sương mỏng. Không có bóng người ở vọng gác."
   },
   {
     id: "SC-02",

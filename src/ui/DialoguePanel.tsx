@@ -304,10 +304,11 @@ export function DialoguePanel({
           </div>
 
           <div
-            className={`dialogue-text dialogue-typewriter-box ${!typewriter.isComplete ? "typing" : ""}`}
+            className={`dialogue-text dialogue-typewriter-box ${!typewriter.isComplete ? "typing" : "ready"}`}
             role="button"
             tabIndex={0}
             aria-label="Khung thoại: bấm để hiện hết câu hoặc chuyển tiếp"
+            aria-live="polite"
             onClick={handleBoxClick}
             onKeyDown={e => {
               if (e.key === "Enter" || e.key === " ") {
@@ -345,13 +346,14 @@ export function DialoguePanel({
 
           {availableChoices.length > 0 ? (
             <div className="choice-bar" aria-label="Lựa chọn hội thoại">
-              {availableChoices.map(choiceItem => (
+              {availableChoices.map((choiceItem, idx) => (
                 <button
                   key={choiceItem.id}
                   type="button"
                   className="choice-btn"
                   onClick={() => handleSelectChoice(choiceItem)}
                 >
+                  <span className="choice-index-num" aria-hidden="true">{idx + 1}.</span>
                   <span>{choiceItem.label}</span>
                 </button>
               ))}

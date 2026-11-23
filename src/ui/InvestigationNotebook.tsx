@@ -6,11 +6,21 @@ import { InvestigationSystem } from "../systems/InvestigationSystem";
 
 type NotebookTab = "deduction" | "archive" | "recordings";
 
+type RuleMetaSummary = {
+  id: string;
+  code: string;
+  title: string;
+};
+
 type Props = {
   system: InvestigationSystem;
   archiveSystem?: ArchiveSystem;
   dialogueSystem?: DialogueSystem;
   preselectedRuleId?: string;
+  preselectedClueId?: string;
+  examinedClueIds?: ReadonlySet<string>;
+  onMarkClueExamined?: (clueId: string) => void;
+  rulesMeta?: readonly RuleMetaSummary[];
   initialTab?: NotebookTab;
   onReplayDialogue?: (dialogueId: string) => void;
   onChange?: () => void;
@@ -133,6 +143,10 @@ export function InvestigationNotebook({
   archiveSystem,
   dialogueSystem,
   preselectedRuleId,
+  preselectedClueId,
+  examinedClueIds,
+  onMarkClueExamined,
+  rulesMeta,
   initialTab = "deduction",
   onReplayDialogue,
   onChange,
@@ -144,11 +158,30 @@ export function InvestigationNotebook({
   const completedDialogues = dialogueSystem ? dialogueSystem.getCompletedDialogues() : [];
 
   const [activeTab, setActiveTab] = useState<NotebookTab>(initialTab);
-  const [selectedId, setSelectedId] = useState<string>(() => clues[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState<string>(() => preselectedClueId ?? clues[0]?.id ?? "");
   const [selectedDocId, setSelectedDocId] = useState<string>(() => unlockedDocs[0]?.id ?? "");
   const [selectedRules, setSelectedRules] = useState<Record<string, string>>({});
+  const [localExaminedIds, setLocalExaminedIds] = useState<Set<string>>(() => new Set());
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const lastAppliedRuleRef = useRef<string | undefined>(undefined);
+  const lastAppliedClueRef = useRef<string | undefined>(undefined);
+
+  const isClueExamined = (clueId: string) =>
+    examinedClueIds ? examinedClueIds.has(clueId) : localExaminedIds.has(clueId);
+
+  const markClueExamined = (clueId: string) => {
+    if (!clueId) return;
+    if (onMarkClueExamined) {
+      onMarkClueExamined(clueId);
+    } else {
+      setLocalExaminedIds(prev => {
+        if (prev.has(clueId)) return prev;
+        const next = new Set(prev);
+        next.add(clueId);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (clues.length === 0) return;
@@ -156,6 +189,12 @@ export function InvestigationNotebook({
       setSelectedId(clues[0].id);
     }
   }, [clues.length, selectedId]);
+
+  useEffect(() => {
+    if (activeTab === "deduction" && selectedId) {
+      markClueExamined(selectedId);
+    }
+  }, [activeTab, selectedId]);
 
   useEffect(() => {
     if (unlockedDocs.length === 0) return;
@@ -183,8 +222,20 @@ export function InvestigationNotebook({
     }
   }, [preselectedRuleId]);
 
+  useEffect(() => {
+    if (!preselectedClueId || preselectedClueId === lastAppliedClueRef.current) return;
+    lastAppliedClueRef.current = preselectedClueId;
+    if (clues.some(c => c.id === preselectedClueId)) {
+      setActiveTab("deduction");
+      setSelectedId(preselectedClueId);
+      setMessage(null);
+    }
+  }, [preselectedClueId]);
+
   const selectedClue = clues.find(clue => clue.id === selectedId) ?? clues[0];
   const selectedDoc = unlockedDocs.find(doc => doc.id === selectedDocId) ?? unlockedDocs[0];
+  const rulesMetaById = new Map((rulesMeta ?? []).map(r => [r.id, r]));
+  const unexaminedCount = clues.filter(c => !isClueExamined(c.id)).length;
 
   const handleLink = () => {
     if (!selectedClue) return;
@@ -242,6 +293,9 @@ export function InvestigationNotebook({
           onClick={() => setActiveTab("deduction")}
         >
           <span>Đối chiếu manh mối ({clues.length})</span>
+          {unexaminedCount > 0 && (
+            <span className="tab-unread-pill">{unexaminedCount} mới</span>
+          )}
         </button>
 
         {archiveSystem && (
@@ -294,6 +348,20 @@ export function InvestigationNotebook({
                   <div className="clue-chips">
                     {clues.map(clue => {
                       const isSelected = selectedClue?.id === clue.id;
+                      const linkedRuleCount = clue.relatedRuleIds.filter(ruleId =>
+                        system.getLinkedClueIds(ruleId).includes(clue.id)
+                      ).length;
+                      const examined = isClueExamined(clue.id);
+                      const statusPill = !examined && linkedRuleCount === 0
+                        ? { text: "MỚI", cls: "is-new" }
+                        : clue.relatedRuleIds.length === 0
+                          ? { text: "LƯU TRỮ", cls: "is-note" }
+                          : linkedRuleCount === clue.relatedRuleIds.length
+                            ? { text: `ĐÃ GẮN ${linkedRuleCount}/${clue.relatedRuleIds.length}`, cls: "is-linked" }
+                            : linkedRuleCount > 0
+                              ? { text: `ĐÃ GẮN ${linkedRuleCount}/${clue.relatedRuleIds.length}`, cls: "is-pending" }
+                              : { text: "CHƯA ĐỐI CHIẾU", cls: "is-pending" };
+
                       return (
                         <button
                           type="button"
@@ -301,12 +369,13 @@ export function InvestigationNotebook({
                           className={`clue-chip ${isSelected ? "active" : ""}`}
                           onClick={() => {
                             setSelectedId(clue.id);
+                            markClueExamined(clue.id);
                             setMessage(null);
                           }}
                         >
                           <span className="chip-top">
-                            <span>{clue.id}</span>
-                            <span className="chip-cat">{CATEGORY_LABELS[clue.category] ?? clue.category}</span>
+                            <span>{clue.id} · {CATEGORY_LABELS[clue.category] ?? clue.category}</span>
+                            <span className={`chip-status-pill ${statusPill.cls}`}>{statusPill.text}</span>
                           </span>
                           <span className="chip-title">{clue.title}</span>
                         </button>
@@ -390,14 +459,28 @@ export function InvestigationNotebook({
                           {selectedClue.relatedRuleIds.length === 0 ? (
                             <option value="">Chưa có quy tắc liên kết</option>
                           ) : (
-                            selectedClue.relatedRuleIds.map(ruleId => (
-                              <option key={ruleId} value={ruleId}>
-                                {ruleId} ({STATUS_LABELS[system.getInvestigationStatus(ruleId)]?.label ?? "Chưa rõ"})
-                              </option>
-                            ))
+                            selectedClue.relatedRuleIds.map(ruleId => {
+                              const ruleMeta = rulesMetaById.get(ruleId);
+                              const statusText = STATUS_LABELS[system.getInvestigationStatus(ruleId)]?.label ?? "Chưa rõ";
+                              return (
+                                <option key={ruleId} value={ruleId}>
+                                  {ruleMeta ? `${ruleId} · ${ruleMeta.title} (${statusText})` : `${ruleId} (${statusText})`}
+                                </option>
+                              );
+                            })
                           )}
                         </select>
-                        <button type="button" className="btn-primary" onClick={handleLink}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={selectedClue.relatedRuleIds.length === 0}
+                          title={
+                            selectedClue.relatedRuleIds.length === 0
+                              ? "Manh mối này hiện chỉ dùng để lưu trữ hồ sơ, chưa gắn vào quy tắc nào."
+                              : "Gắn bằng chứng này vào quy tắc đang chọn"
+                          }
+                          onClick={handleLink}
+                        >
                           Gắn bằng chứng
                         </button>
                       </div>
@@ -409,10 +492,11 @@ export function InvestigationNotebook({
                         if (!linkedIds.includes(selectedClue.id)) return null;
                         const st = system.getInvestigationStatus(ruleId);
                         const meta = STATUS_LABELS[st] ?? { label: st, tone: "neutral" };
+                        const ruleMeta = rulesMetaById.get(ruleId);
                         return (
                           <div className="linked-row" key={ruleId}>
                             <div>
-                              <strong>{ruleId}</strong>
+                              <strong>{ruleMeta ? `${ruleId} · ${ruleMeta.title}` : ruleId}</strong>
                               <span className={`badge badge-${meta.tone}`}>{meta.label}</span>
                             </div>
                             <button
